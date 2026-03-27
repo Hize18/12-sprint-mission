@@ -76,7 +76,7 @@ public class JCFMessageService implements MessageService {
     }
 
     @Override
-    public boolean update(UUID messageId, UUID userId, String content) {
+    public boolean update(UUID userId, UUID messageId, String content) {
         if (messageId == null) throw new IllegalArgumentException("messageId is null.");
         if (userId == null) throw new IllegalArgumentException("userId is null.");
         if (content == null) throw new IllegalArgumentException("content is null.");
@@ -91,7 +91,7 @@ public class JCFMessageService implements MessageService {
     }
 
     @Override
-    public boolean delete(UUID messageId, UUID userId) {
+    public boolean delete(UUID userId, UUID messageId) {
         if (messageId == null) throw new IllegalArgumentException("messageId is null.");
         if (userId == null) throw new IllegalArgumentException("userId is null.");
 

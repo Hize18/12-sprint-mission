@@ -53,8 +53,8 @@
 - List<Message> findByUserId(UUID userId)
 - List<Message> findByKeyword(String keyword)
 - List<Message> findAll()
-- void update(UUID messageId, UUID userId, String content)
-- void delete(UUID messageId, UUID userId)
+- void update(UUID userId, UUID messageId, String content)
+- void delete(UUID userId, UUID messageId)
 
 ## Design Notes
 - findByChannelId

@@ -13,6 +13,6 @@ public interface MessageService {
     List<Message> findByUserId(UUID userId);
     List<Message> findByKeyword(String keyword);
     List<Message> findAll();
-    boolean update(UUID messageId, UUID userId, String content);
-    boolean delete(UUID messageId, UUID userId);
+    boolean update(UUID userId, UUID messageId, String content);
+    boolean delete(UUID userId, UUID messageId);
 }
