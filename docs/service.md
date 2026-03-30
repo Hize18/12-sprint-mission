@@ -4,12 +4,12 @@
 - boolean isUniqueUsername(String username)
 - boolean isUniqueEmail(String email)
 - User save(User user)
+- User findById(UUID id)
 - User findByUsername(String username)
-- User findByEmail(String email)
 - List<User> findByNickname(String nickname)
 - List<User> findAll()
-- void update(UUID srcUserId, UUID dstUserId, User userData)
-- void delete(UUID srcUserId, UUID dstUserId)
+- boolean update(UUID srcUserId, UUID dstUserId, User userData)
+- boolean delete(UUID srcUserId, UUID dstUserId)
 
 ## Design Notes
 - username, email 중복 방지를 위해 isUnique 메서드 사용
@@ -27,12 +27,13 @@
 - boolean isUniqueHandle(String handle)
 - String createHandle(String name)
 - Channel save(Channel channel)
+- Channel findById(UUID id)
 - Channel findByHandle(String handle)
 - List<Channel> findByOwner(UUID ownerId)
 - List<Channel> findByName(String name)
 - List<Channel> findAll()
-- void update(UUID userId, UUID channelId, String name)
-- void delete(UUID userId, UUID channelId)
+- boolean update(UUID userId, UUID channelId, String name)
+- boolean delete(UUID userId, UUID channelId)
 
 ## Design Notes
 - handle은 unique 값 → isUniqueHandle로 검증
@@ -53,8 +54,8 @@
 - List<Message> findByUserId(UUID userId)
 - List<Message> findByKeyword(String keyword)
 - List<Message> findAll()
-- void update(UUID userId, UUID messageId, String content)
-- void delete(UUID userId, UUID messageId)
+- boolean update(UUID userId, UUID messageId, String content)
+- boolean delete(UUID userId, UUID messageId)
 
 ## Design Notes
 - findByChannelId
@@ -90,3 +91,63 @@
 
 - try-catch 로직은 별도의 메소드로 분리하여 재사용성을 고려
 
+
+
+Service를 jcf -> file로 변경
+기존 로직은 그대로 활용.
+각 객체마다 저장시 로드, 수정 및 삭제를 쉽게 할 수 있음.
+하지만 service에서 map을 활용하는 방법을 사용하기 위해 하나의 파일로 조작.
+저장 방법은 각 service의 map 마다 하나의 파일로 저장 (*.ser)
+data/
+  user.ser
+  channel.ser
+  message.ser
+
+map은 그대로 유지(repo로 변경시 분리) 및 map을 이용하여 find 사용(매번 load시 낭비 심함)
+생성자로 *.ser를 불러와서 map을 load.
+save는 마지막에 map에 저장후 map을 user.ser로 저장(있으면 덮어쓰기)
+find는 map을 이용한 로직 그대로
+update는 마지막에 map 그대로 저장
+delete도 마지막에 map 그대로 저장
+
+
+## File 기반 Service 설계
+
+- Service를 JCF → File 기반으로 변경
+- 기존 비즈니스 로직은 그대로 활용
+- Service에서 Map을 유지하면서 File IO를 통해 데이터 영속화 처리
+
+### 저장 방식
+
+- 각 도메인별 Map을 하나의 파일로 저장 (*.ser)
+```
+└data
+    user.ser
+    channel.ser
+    message.ser
+```
+
+- Map 전체를 직렬화하여 파일에 저장
+- 하나의 파일을 해당 도메인의 전체 데이터 저장소로 사용
+
+### 동작 방식
+
+- Map은 그대로 유지 (추후 Repository로 분리 예정)
+- find는 Map을 이용하여 처리 (매번 load 시 비효율적이므로 메모리 사용)
+
+#### 생성자
+- *.ser 파일을 읽어서 Map으로 load
+- 파일이 없으면 빈 Map으로 초기화
+
+#### save
+- Map에 데이터 저장
+- 이후 Map 전체를 파일에 저장 (기존 파일 덮어쓰기)
+
+#### find
+- 기존 Map 기반 조회 로직 그대로 사용
+
+#### update
+- Map 데이터 수정 후 전체 Map을 파일에 저장
+
+#### delete
+- Map에서 데이터 제거 후 전체 Map을 파일에 저장

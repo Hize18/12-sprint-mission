@@ -6,42 +6,45 @@ import com.sprint.mission.discodeit.entity.User;
 import com.sprint.mission.discodeit.service.ChannelService;
 import com.sprint.mission.discodeit.service.MessageService;
 import com.sprint.mission.discodeit.service.UserService;
-import com.sprint.mission.discodeit.service.jcf.JCFChannelService;
-import com.sprint.mission.discodeit.service.jcf.JCFMessageService;
-import com.sprint.mission.discodeit.service.jcf.JCFUserService;
-
-import java.util.List;
+import com.sprint.mission.discodeit.service.file.FileChannelService;
+import com.sprint.mission.discodeit.service.file.FileMessageService;
+import com.sprint.mission.discodeit.service.file.FileUserService;
 
 public class JavaApplication {
     static User currentUser;
 
 
     public static void main(String[] args){
-        UserService us = new JCFUserService();
-        ChannelService cs = new JCFChannelService();
-        MessageService ms = new JCFMessageService();
+        UserService us = new FileUserService();
+        ChannelService cs = new FileChannelService();
+        MessageService ms = new FileMessageService();
 
         currentUser = initData(us, cs, ms);
 
-//        testPrintAllEntities(us, cs, ms);
+        testPrintAllEntities(us, cs, ms);
 //        testModifyEntities(us, cs, ms);
-        testDeleteEntities(us, cs, ms);
+//        testDeleteEntities(us, cs, ms);
 
     }
 
     public static User initData(UserService us, ChannelService cs ,MessageService ms){
-        User user1 = us.save(new User("test1","test1@aaa.com","1234","test1_nickname"));
-        User user2 = us.save(new User("test2","test2@aaa.com","2345","test2_nickname"));
-        User user3 = us.save(new User("test3", "test3@aaa.com", "3412", "test3_nickname"));
+        User user1 = saveMethod(us, new User("test1","test1@aaa.com","1234","test1_nickname"));
+        User user2 = saveMethod(us, new User("test2","test2@aaa.com","2345","test2_nickname"));
+        User user3 = saveMethod(us, new User("test3", "test3@aaa.com", "3412", "test3_nickname"));
 
         Channel[] ch = new Channel[3];
-        ch[0] = cs.save(new Channel(user1, "test1_channel", cs.createHandle("test1_channel")));
-        ch[1] = cs.save(new Channel(user2, "test2_channel", cs.createHandle("test2_channel")));
-        ch[2] = cs.save(new Channel(user3, "test3_channel", cs.createHandle("test3_channel")));
-        for (int i = 0; i < 3; i++) {
-            ms.save(new Message(ch[i], user1, "test"+(i+11)));
-            ms.save(new Message(ch[i], user2, "test"+(i+21)));
-            ms.save(new Message(ch[i], user3, "test"+(i+31)));
+        ch[0] = saveMethod(cs, new Channel(user1, "test1_channel", "test1_channel_handle"));
+        ch[1] = saveMethod(cs, new Channel(user2, "test2_channel", "test2_channel_handle"));
+        ch[2] = saveMethod(cs, new Channel(user3, "test3_channel", "test3_channel_handle"));
+        if(ms.findAll().isEmpty()){
+            for (int i = 0; i < 3; i++) {
+                saveMethod(ms, new Message(ch[i], user1, "test"+(i+11)));
+                saveMethod(ms, new Message(ch[i], user2, "test"+(i+21)));
+                saveMethod(ms, new Message(ch[i], user3, "test"+(i+31)));
+            }
+        }
+        if(ms.findAll().size()==8){
+            saveMethod(ms, new Message(ch[0], user3, "test444"));
         }
         return user3;
     }
@@ -116,6 +119,41 @@ public class JavaApplication {
         System.out.println("++++++++++메시지 삭제++++++++++");
         for (Message message : ms.findByChannelId(channel1.getId())) {
             deleteMethod(ms, currentUser, message);
+        }
+    }
+
+    public static User saveMethod(UserService us, User userData){
+        if(!us.isUniqueUsername(userData.getUsername())){
+            return us.findByUsername(userData.getUsername());
+        }
+
+        try {
+            return us.save(userData);
+        } catch (Exception e){
+            System.out.println(e);
+            return null;
+        }
+    }
+
+    public static Channel saveMethod(ChannelService cs, Channel channelData){
+        if(!cs.isUniqueHandle(channelData.getHandle())){
+            return cs.findByHandle(channelData.getHandle());
+        }
+
+        try {
+            return cs.save(channelData);
+        }catch (Exception e){
+            System.out.println(e);
+            return  null;
+        }
+    }
+
+    public static Message saveMethod(MessageService ms, Message messageData){
+        try {
+            return ms.save(messageData);
+        }catch (Exception e){
+            System.out.println(e);
+            return null;
         }
     }
 

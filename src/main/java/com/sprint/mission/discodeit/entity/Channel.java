@@ -1,10 +1,14 @@
 package com.sprint.mission.discodeit.entity;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.UUID;
 
-public class Channel {
+public class Channel implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 1L;
     private final UUID id;
     private User owner;
     private String name;
