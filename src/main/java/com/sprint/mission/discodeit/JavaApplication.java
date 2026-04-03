@@ -3,21 +3,28 @@ package com.sprint.mission.discodeit;
 import com.sprint.mission.discodeit.entity.Channel;
 import com.sprint.mission.discodeit.entity.Message;
 import com.sprint.mission.discodeit.entity.User;
+import com.sprint.mission.discodeit.repository.file.FileChannelRepository;
+import com.sprint.mission.discodeit.repository.file.FileMessageRepository;
+import com.sprint.mission.discodeit.repository.file.FileUserRepository;
 import com.sprint.mission.discodeit.service.ChannelService;
 import com.sprint.mission.discodeit.service.MessageService;
 import com.sprint.mission.discodeit.service.UserService;
-import com.sprint.mission.discodeit.service.file.FileChannelService;
-import com.sprint.mission.discodeit.service.file.FileMessageService;
-import com.sprint.mission.discodeit.service.file.FileUserService;
+import com.sprint.mission.discodeit.service.basic.BasicChannelService;
+import com.sprint.mission.discodeit.service.basic.BasicMessageService;
+import com.sprint.mission.discodeit.service.basic.BasicUserService;
 
 public class JavaApplication {
     static User currentUser;
 
 
     public static void main(String[] args){
-        UserService us = new FileUserService();
-        ChannelService cs = new FileChannelService();
-        MessageService ms = new FileMessageService();
+        UserService us = new BasicUserService(new FileUserRepository());
+        ChannelService cs = new BasicChannelService(new FileChannelRepository());
+        MessageService ms = new BasicMessageService(new FileMessageRepository());
+
+//        UserService us = new BasicUserService(new JCFUserRepository());
+//        ChannelService cs = new BasicChannelService(new JCFChannelRepository());
+//        MessageService ms = new BasicMessageService(new JCFMessageRepository());
 
         currentUser = initData(us, cs, ms);
 
@@ -43,6 +50,7 @@ public class JavaApplication {
                 saveMethod(ms, new Message(ch[i], user3, "test"+(i+31)));
             }
         }
+//        size == 8로 검증하는 이유는 deleteMethod를 한 후 재실행시 오류 방지.
         if(ms.findAll().size()==8){
             saveMethod(ms, new Message(ch[0], user3, "test444"));
         }

@@ -56,3 +56,6 @@ message의 delete 메소드 실행 후 다시 출력시 메시지가 조회시 �
 saveMethod
 이전에 정의한 updateMethod나 deleteMethod처럼 오버로딩을 통해 통일성을 주기 위해 사용
 도메인에 따라 중복 처리를 먼저 실행후 try-catch로 에러 검출.
+
+---
+repo 및 basic을 추가 정의함에 따라 코드도 변경 사항이 있지만, basic에서 기존 *service를 구현하기 때문에 service 선언부만 diff가 있음.
