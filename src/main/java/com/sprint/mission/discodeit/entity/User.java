@@ -29,6 +29,18 @@ public class User implements Serializable {
         updatedAt = createdAt;
     }
 
+    public User(User user) {
+        if(user == null) throw new IllegalArgumentException("User is null.");
+
+        this.id = user.getId();
+        this.username = user.getUsername();
+        this.email = user.getEmail();
+        this.password = user.getPassword();
+        this.nickname = user.getNickname();
+        this.createdAt = user.getCreatedAt();
+        this.updatedAt = user.getUpdatedAt();
+    }
+
     public UUID getId() {
         return id;
     }

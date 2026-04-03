@@ -27,6 +27,17 @@ public class Channel implements Serializable {
         this.updatedAt = createdAt;
     }
 
+    public Channel(Channel channel) {
+        if(channel == null) throw new IllegalArgumentException("Channel is null.");
+
+        this.id = channel.getId();
+        this.owner = channel.getOwner();
+        this.name = channel.getName();
+        this.handle = channel.getHandle();
+        this.createdAt = channel.getCreatedAt();
+        this.updatedAt = channel.getUpdatedAt();
+    }
+
     public UUID getId() {
         return id;
     }

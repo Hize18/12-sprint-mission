@@ -151,3 +151,14 @@ delete도 마지막에 map 그대로 저장
 
 #### delete
 - Map에서 데이터 제거 후 전체 Map을 파일에 저장
+
+---
+## Basic*Service
+- UserService를 구현하여 사용
+- 생성자에서 JCF 또는 File Repository를 주입받아 데이터 처리 방식 결정
+- 비즈니스 로직 담당 (검증, 중복 검사, 권한 확인 등)
+- Optional 대신 null 기반 검증 사용
+- save, find, update, delete의 실제 데이터 처리는 Repository에 위임
+
+- 기존 서비스 로직은 유지하고, 저장 방식만 변경
+- Application에서는 Basic*Service를 사용하여 동일한 방식으로 실행 가능

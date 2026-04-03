@@ -27,6 +27,17 @@ public class Message implements Serializable {
         this.updatedAt = createdAt;
     }
 
+    public Message(Message message) {
+        if(message == null) throw new IllegalArgumentException("Message is null.");
+
+        this.id = message.getId();
+        this.channel = message.getChannel();
+        this.user = message.getUser();
+        this.content = message.getContent();
+        this.createdAt = message.getCreatedAt();
+        this.updatedAt = message.getUpdatedAt();
+    }
+
     public UUID getId() {
         return id;
     }
