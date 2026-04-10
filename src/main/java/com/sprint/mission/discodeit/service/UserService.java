@@ -7,12 +7,18 @@ import java.util.UUID;
 
 public interface UserService {
     boolean isUniqueUsername(String username);
+
     boolean isUniqueEmail(String email);
+
     User save(User user);
+
     User findById(UUID id);
+
     User findByUsername(String username);
-    List<User> findByNickname(String nickname);
+
     List<User> findAll();
+
     boolean update(UUID srcUserId, UUID dstUserId, User userData);
+
     boolean delete(UUID srcUserId, UUID dstUserId);
 }

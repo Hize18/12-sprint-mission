@@ -2,41 +2,40 @@ package com.sprint.mission.discodeit.repository.file;
 
 import com.sprint.mission.discodeit.entity.Message;
 import com.sprint.mission.discodeit.repository.MessageRepository;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Repository;
 
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 
+@Repository
+@ConditionalOnProperty(name ="12-sprint-mission.repository.type", havingValue = "file")
 public class FileMessageRepository implements MessageRepository {
     private final Map<UUID, Message> data;
-    private final Path path = Path.of(System.getProperty("user.dir"),"data_repo/message.ser");
+    private final Path path = Path.of(System.getProperty("user.dir"), "data_repo/message.ser");
 
-    public FileMessageRepository(){
+    public FileMessageRepository() {
         Map<UUID, Message> temp;
+
         try {
             Files.createDirectories(path.getParent());
-
-            if(Files.exists(path))
-            {
-                try(FileInputStream fis = new FileInputStream(path.toFile());
-                    ObjectInputStream ois = new ObjectInputStream(fis)) {
+            if (Files.exists(path)) {
+                try (FileInputStream fis = new FileInputStream(path.toFile());
+                     ObjectInputStream ois = new ObjectInputStream(fis)) {
                     temp = (Map<UUID, Message>) ois.readObject();
                 }
-            }
-            else temp = new HashMap<>();
-        } catch (Exception e) {
+            } else temp = new HashMap<>();
+        } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
             temp = new HashMap<>();
         }
         this.data = temp;
     }
 
-    private void saveMap(Map<UUID, Message> map){
-        try(ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(path.toFile()))){
+    private void saveMap(Map<UUID, Message> map) {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(path.toFile()))) {
             oos.writeObject(map);
         } catch (Exception e) {
             throw new IllegalStateException("message file save failed.", e);
@@ -54,8 +53,8 @@ public class FileMessageRepository implements MessageRepository {
     }
 
     @Override
-    public Message findById(UUID id) {
-        return data.get(id);
+    public Optional<Message> findById(UUID id) {
+        return Optional.ofNullable(data.get(id));
     }
 
     @Override
@@ -63,7 +62,7 @@ public class FileMessageRepository implements MessageRepository {
         List<Message> list = new ArrayList<>();
 
         for (Message value : data.values()) {
-            if(value.getChannel().getId().equals(channelId)) list.add(value);
+            if (Objects.equals(value.getChannelId(), channelId)) list.add(value);
         }
         list.sort(Comparator.comparing(Message::getUpdatedAt));
         return list;
@@ -74,20 +73,7 @@ public class FileMessageRepository implements MessageRepository {
         List<Message> list = new ArrayList<>();
 
         for (Message value : data.values()) {
-            if(value.getUser().getId().equals(userId)) list.add(value);
-        }
-        list.sort(Comparator.comparing(Message::getUpdatedAt));
-        return list;
-    }
-
-    @Override
-    public List<Message> findByKeyword(String keyword) {
-        List<Message> list = new ArrayList<>();
-
-        for (Message value : data.values()) {
-            if(value.getUser().getNickname().contains(keyword) ||
-                    value.getChannel().getName().contains(keyword) ||
-                    value.getContent().contains(keyword)) list.add(value);
+            if (Objects.equals(value.getUserId(), userId)) list.add(value);
         }
         list.sort(Comparator.comparing(Message::getUpdatedAt));
         return list;

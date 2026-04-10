@@ -1,84 +1,66 @@
 package com.sprint.mission.discodeit.entity;
 
+import lombok.Getter;
+
 import java.io.Serial;
 import java.io.Serializable;
-import java.sql.Timestamp;
-import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
+@Getter
 public class Channel implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
     private final UUID id;
-    private User owner;
+    private UUID ownerId;
     private String name;
-    private String handle;
-    private final Long createdAt;
-    private Long updatedAt;
+    private final Instant createdAt;
+    private Instant updatedAt;
 
-    public Channel(User owner, String name, String handle) {
-        if(owner == null || name == null || handle == null) throw new IllegalArgumentException("Channel is null.");
+    public Channel(User owner, String name) {
+        if (owner == null || name == null) throw new IllegalArgumentException("Channel is null.");
 
         this.id = UUID.randomUUID();
-        this.owner = owner;
+        this.ownerId = owner.getId();
         this.name = name;
-        this.handle = handle;
-        this.createdAt = System.currentTimeMillis();
+        this.createdAt = Instant.now();
         this.updatedAt = createdAt;
     }
 
     public Channel(Channel channel) {
-        if(channel == null) throw new IllegalArgumentException("Channel is null.");
+        if (channel == null) throw new IllegalArgumentException("Channel is null.");
 
         this.id = channel.getId();
-        this.owner = channel.getOwner();
+        this.ownerId = channel.getOwnerId();
         this.name = channel.getName();
-        this.handle = channel.getHandle();
         this.createdAt = channel.getCreatedAt();
         this.updatedAt = channel.getUpdatedAt();
     }
 
-    public UUID getId() {
-        return id;
+    public static Channel copyOf(Channel channel){
+        return new Channel(channel);
     }
 
-    public User getOwner() {
-        return owner;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public String getHandle() {
-        return handle;
-    }
-
-    public Long getCreatedAt() {
-        return createdAt;
-    }
-
-    public Long getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void update(String name, String handle){
-        if(name == null || handle == null) throw new IllegalArgumentException("Channel update error.");
+    public void update(String name) {
+        if (name == null) throw new IllegalArgumentException("Channel update error.");
 
         this.name = name;
-        this.handle = handle;
-        this.updatedAt = System.currentTimeMillis();
+        this.updatedAt = Instant.now();
     }
+
+    private static final DateTimeFormatter FORMATTER =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+                    .withZone(ZoneId.systemDefault());
 
     @Override
     public String toString() {
         return "Channel [" +
-                "owner = " + owner.getNickname() +
+                "ownerId = " + ownerId +
                 ", name = " + name +
-                ", handle = " + handle +
                 "]\t시간 = " +
-                new SimpleDateFormat("yyyy-MM-dd HH:mm")
-                        .format(new Timestamp(updatedAt)) +
-                (updatedAt > createdAt ? "(수정됨)":"");
+                FORMATTER.format(updatedAt)
+                + (updatedAt.isAfter(createdAt) ? "(수정됨)" : "");
     }
 }

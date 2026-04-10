@@ -1,0 +1,5 @@
+spring:
+  application:
+    name: 12-sprint-mission
+  profiles:
+    active: dev

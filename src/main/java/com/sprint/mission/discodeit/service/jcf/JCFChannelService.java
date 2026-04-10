@@ -1,48 +1,36 @@
 package com.sprint.mission.discodeit.service.jcf;
 
 import com.sprint.mission.discodeit.entity.Channel;
-import com.sprint.mission.discodeit.entity.Message;
 import com.sprint.mission.discodeit.service.ChannelService;
+import com.sprint.mission.discodeit.service.UserService;
 
 import java.util.*;
 
 public class JCFChannelService implements ChannelService {
     private final Map<UUID, Channel> data;
+    private final UserService us;
 
-    public JCFChannelService() {this.data = new HashMap<>();}
-
-    @Override
-    public boolean isUniqueHandle(String handle) {
-        if(handle == null) throw new IllegalArgumentException("handle is null.");
-
-        for (Channel value : data.values()) {
-            if(value.getHandle().equals(handle)) return false;
-        }
-        return true;
+    public JCFChannelService(UserService us) {
+        this.data = new HashMap<>();
+        this.us = us;
     }
 
     @Override
-    public String createHandle(String name) {
-        if(name == null) throw new IllegalArgumentException("name is null.");
+    public boolean isUniqueName(String name) {
+        if (name == null) throw new IllegalArgumentException("name is null.");
 
-        String handle;
-        Random rand = new Random();
-        int max_attempt = 0;
-        while(max_attempt<100){
-            int num = rand.nextInt(10000);
-            handle = name + String.format("%04d",num);
-            if(isUniqueHandle(handle)) return handle;
-            max_attempt++;
-        }
-        throw new RuntimeException("handle 생성 실패.");
+        return data.values().stream()
+                .noneMatch(channel -> Objects.equals(channel.getName(), name));
     }
 
     @Override
     public Channel save(Channel channel) {
         if (channel == null) throw new IllegalArgumentException("channel is null.");
-        if (channel.getHandle() == null) throw new IllegalArgumentException("handle is null.");
-        if (channel.getOwner() == null) throw new IllegalArgumentException("owner is null.");
-        if (!isUniqueHandle(channel.getHandle())) throw new IllegalArgumentException("handle is duplicate.");
+        if (channel.getName() == null) throw new IllegalArgumentException("name is null.");
+        if (channel.getOwnerId() == null) throw new IllegalArgumentException("ownerId is null.");
+        us.findById(channel.getOwnerId());
+
+        if (!isUniqueName(channel.getName())) throw new IllegalStateException("name is duplicate.");
 
         data.put(channel.getId(), channel);
         return channel;
@@ -50,40 +38,30 @@ public class JCFChannelService implements ChannelService {
 
     @Override
     public Channel findById(UUID id) {
-        if(id == null) throw new RuntimeException("id is null.");
+        if (id == null) throw new IllegalArgumentException("id is null.");
 
-        return data.get(id);
+        return Optional.ofNullable(data.get(id))
+                .orElseThrow(() -> new NoSuchElementException("channel not found."));
     }
 
     @Override
-    public Channel findByHandle(String handle) {
-        if(handle == null) throw new RuntimeException("handle is null.");
+    public Channel findByName(String name) {
+        if (name == null) throw new IllegalArgumentException("name is null.");
 
-        for (Channel value : data.values()) {
-            if(value.getHandle().equals(handle)) return value;
-        }
-        return null;
+        return data.values().stream()
+                .filter(channel -> Objects.equals(channel.getName(), name))
+                .findFirst()
+                .orElseThrow(() -> new NoSuchElementException("channel not found."));
     }
 
     @Override
     public List<Channel> findByOwner(UUID ownerId) {
-        if(ownerId == null) throw new RuntimeException("ownerId is null.");
+        if (ownerId == null) throw new IllegalArgumentException("ownerId is null.");
 
         List<Channel> list = new ArrayList<>();
-        for (Channel value : data.values()) {
-            if(value.getOwner().getId().equals(ownerId)) list.add(value);
-        }
-        list.sort(Comparator.comparing(Channel::getUpdatedAt));
-        return list;
-    }
 
-    @Override
-    public List<Channel> findByName(String name) {
-        if(name == null) throw new RuntimeException("name is null.");
-
-        List<Channel> list = new ArrayList<>();
         for (Channel value : data.values()) {
-            if(value.getName().equals(name)) list.add(value);
+            if (value.getOwnerId().equals(ownerId)) list.add(value);
         }
         list.sort(Comparator.comparing(Channel::getUpdatedAt));
         return list;
@@ -103,25 +81,27 @@ public class JCFChannelService implements ChannelService {
         if (name == null) throw new IllegalArgumentException("name is null.");
 
         Channel channel = findById(channelId);
-        if (channel == null) throw new IllegalArgumentException("channel is null");
-        if(channel.getName().equals(name) || name.isEmpty()) throw new IllegalArgumentException("name is same.");
 
-        if(!channel.getOwner().getId().equals(userId)) return false;
+        if (channel.getName().equals(name) || name.isEmpty()) throw new IllegalArgumentException("name is same.");
 
-        channel.update(name.trim(), createHandle(name.trim()));
+        if (!isUniqueName(name) && !channel.getName().equals(name)) {
+            throw new IllegalStateException("name is duplicate.");
+        }
+
+        if (!channel.getOwnerId().equals(userId)) return false;
+
+        channel.update(name.trim());
         return true;
     }
 
     @Override
     public boolean delete(UUID userId, UUID channelId) {
-//        data.removeIf(c -> c.getId().equals(id));
         if (userId == null) throw new IllegalArgumentException("userId is null.");
         if (channelId == null) throw new IllegalArgumentException("channelId is null.");
 
         Channel channel = findById(channelId);
-        if(channel == null) throw new IllegalArgumentException("channel not found.");
 
-        if(!channel.getOwner().getId().equals(userId)) return false;
+        if (!channel.getOwnerId().equals(userId)) return false;
 
         data.remove(channelId);
         return true;

@@ -8,7 +8,9 @@ import java.util.*;
 public class JCFChannelRepository implements ChannelRepository {
     private final Map<UUID, Channel> data;
 
-    public JCFChannelRepository() {this.data = new HashMap<>();}
+    public JCFChannelRepository() {
+        this.data = new HashMap<>();
+    }
 
     @Override
     public Channel save(Channel channel) {
@@ -17,33 +19,23 @@ public class JCFChannelRepository implements ChannelRepository {
     }
 
     @Override
-    public Channel findById(UUID id) {
-        return data.get(id);
+    public Optional<Channel> findById(UUID id) {
+        return Optional.ofNullable(data.get(id));
     }
 
     @Override
-    public Channel findByHandle(String handle) {
-        for (Channel value : data.values()) {
-            if(value.getHandle().equals(handle)) return value;
-        }
-        return null;
+    public Optional<Channel> findByName(String name) {
+        return data.values().stream()
+                .filter(channel -> Objects.equals(channel.getName(), name))
+                .findFirst();
     }
 
     @Override
-    public List<Channel> findByOwner(UUID ownerId) {
+    public List<Channel> findByOwnerId(UUID ownerId) {
         List<Channel> list = new ArrayList<>();
-        for (Channel value : data.values()) {
-            if(value.getOwner().getId().equals(ownerId)) list.add(value);
-        }
-        list.sort(Comparator.comparing(Channel::getUpdatedAt));
-        return list;
-    }
 
-    @Override
-    public List<Channel> findByName(String name) {
-        List<Channel> list = new ArrayList<>();
         for (Channel value : data.values()) {
-            if(value.getName().equals(name)) list.add(value);
+            if (Objects.equals(value.getOwnerId(), ownerId)) list.add(value);
         }
         list.sort(Comparator.comparing(Channel::getUpdatedAt));
         return list;

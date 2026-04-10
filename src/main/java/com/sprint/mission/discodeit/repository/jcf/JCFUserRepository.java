@@ -19,26 +19,15 @@ public class JCFUserRepository implements UserRepository {
     }
 
     @Override
-    public User findById(UUID id) {
-        return data.get(id);
+    public Optional<User> findById(UUID id) {
+        return Optional.ofNullable(data.get(id));
     }
 
     @Override
-    public User findByUsername(String username) {
-        for (User value : data.values()) {
-            if(value.getUsername().equals(username)) return value;
-        }
-        return null;
-    }
-
-    @Override
-    public List<User> findByNickname(String nickname) {
-        List<User> list = new ArrayList<>();
-        for (User value : data.values()) {
-            if(value.getNickname().equals(nickname)) list.add(value);
-        }
-        list.sort(Comparator.comparing(User::getUpdatedAt));
-        return list;
+    public Optional<User> findByUsername(String username) {
+        return data.values().stream()
+                .filter(user -> Objects.equals(user.getUsername(), username))
+                .findFirst();
     }
 
     @Override

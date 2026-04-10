@@ -2,79 +2,64 @@ package com.sprint.mission.discodeit.service.basic;
 
 import com.sprint.mission.discodeit.entity.Channel;
 import com.sprint.mission.discodeit.repository.ChannelRepository;
+import com.sprint.mission.discodeit.repository.UserRepository;
 import com.sprint.mission.discodeit.service.ChannelService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Random;
+import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.UUID;
 
+@RequiredArgsConstructor
+@Service
 public class BasicChannelService implements ChannelService {
     private final ChannelRepository cr;
-
-    public BasicChannelService(ChannelRepository channelRepository) {cr = channelRepository;}
-
-    @Override
-    public boolean isUniqueHandle(String handle) {
-        if(handle == null) throw new IllegalArgumentException("handle is null.");
-
-        for (Channel value : cr.findAll()) {
-            if(value.getHandle().equals(handle)) return false;
-        }
-        return true;
-    }
+    private final UserRepository ur;
 
     @Override
-    public String createHandle(String name) {
-        if(name == null) throw new IllegalArgumentException("name is null.");
+    public boolean isUniqueName(String name) {
+        if (name == null) throw new IllegalArgumentException("name is null.");
 
-        String handle;
-        Random rand = new Random();
-        int max_attempt = 0;
-        while(max_attempt<100){
-            int num = rand.nextInt(10000);
-            handle = name + String.format("%04d",num);
-            if(isUniqueHandle(handle)) return handle;
-            max_attempt++;
-        }
-        throw new RuntimeException("handle 생성 실패.");
+        return cr.findAll().stream()
+                .noneMatch(channel -> Objects.equals(channel.getName(), name));
     }
 
     @Override
     public Channel save(Channel channel) {
         if (channel == null) throw new IllegalArgumentException("channel is null.");
-        if (channel.getHandle() == null) throw new IllegalArgumentException("handle is null.");
-        if (channel.getOwner() == null) throw new IllegalArgumentException("owner is null.");
-        if (!isUniqueHandle(channel.getHandle())) throw new IllegalStateException("handle is duplicate.");
+        if (channel.getName() == null) throw new IllegalArgumentException("name is null.");
+        if (channel.getOwnerId() == null) throw new IllegalArgumentException("ownerId is null.");
+
+        if (channel.getName().isBlank()) throw new IllegalArgumentException("name is blank.");
+
+        if (!isUniqueName(channel.getName())) throw new IllegalStateException("name is duplicate.");
+
+        ur.findById(channel.getOwnerId()).orElseThrow(() -> new NoSuchElementException("owner not found."));
 
         return cr.save(channel);
     }
 
     @Override
     public Channel findById(UUID id) {
-        if(id == null) throw new IllegalArgumentException("id is null.");
+        if (id == null) throw new IllegalArgumentException("id is null.");
 
-        return cr.findById(id);
+        return cr.findById(id).orElseThrow(() -> new NoSuchElementException("channel not found."));
     }
 
     @Override
-    public Channel findByHandle(String handle) {
-        if(handle == null) throw new IllegalArgumentException("handle is null.");
+    public Channel findByName(String name) {
+        if (name == null) throw new IllegalArgumentException("name is null.");
 
-        return cr.findByHandle(handle);
+        return cr.findByName(name).orElseThrow(() -> new NoSuchElementException("channel not found."));
     }
 
     @Override
     public List<Channel> findByOwner(UUID ownerId) {
-        if(ownerId == null) throw new IllegalArgumentException("ownerId is null.");
+        if (ownerId == null) throw new IllegalArgumentException("ownerId is null.");
 
-        return cr.findByOwner(ownerId);
-    }
-
-    @Override
-    public List<Channel> findByName(String name) {
-        if(name == null) throw new IllegalArgumentException("name is null.");
-
-        return cr.findByName(name);
+        return cr.findByOwnerId(ownerId);
     }
 
     @Override
@@ -89,28 +74,36 @@ public class BasicChannelService implements ChannelService {
         if (name == null) throw new IllegalArgumentException("name is null.");
 
         Channel channel = findById(channelId);
-        if (channel == null) throw new IllegalStateException("channel is null");
-        if(channel.getName().equals(name) || name.isEmpty()) throw new IllegalStateException("name is same.");
 
-        if(!channel.getOwner().getId().equals(userId)) return false;
+        if (name.isBlank()) {
+            throw new IllegalArgumentException("name is blank.");
+        }
 
-        Channel tempChannel = new Channel(channel);
+        if (Objects.equals(channel.getName(), name)) {
+            throw new IllegalStateException("name is same.");
+        }
 
-        tempChannel.update(name, createHandle(name));
+        if (!isUniqueName(name)) {
+            throw new IllegalStateException("name is duplicate.");
+        }
+
+        if (!Objects.equals(channel.getOwnerId(), userId)) return false;
+
+        Channel tempChannel = Channel.copyOf(channel);
+
+        tempChannel.update(name);
         cr.save(tempChannel);
         return true;
     }
 
     @Override
     public boolean delete(UUID userId, UUID channelId) {
-//        data.removeIf(c -> c.getId().equals(id));
         if (userId == null) throw new IllegalArgumentException("userId is null.");
         if (channelId == null) throw new IllegalArgumentException("channelId is null.");
 
         Channel channel = findById(channelId);
-        if(channel == null) throw new IllegalStateException("channel not found.");
 
-        if(!channel.getOwner().getId().equals(userId)) return false;
+        if (!Objects.equals(channel.getOwnerId(), userId)) return false;
 
         cr.delete(channelId);
         return true;

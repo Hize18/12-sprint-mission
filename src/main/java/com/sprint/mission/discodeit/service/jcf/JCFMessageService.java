@@ -1,22 +1,30 @@
 package com.sprint.mission.discodeit.service.jcf;
 
-import com.sprint.mission.discodeit.entity.Channel;
 import com.sprint.mission.discodeit.entity.Message;
-import com.sprint.mission.discodeit.entity.User;
+import com.sprint.mission.discodeit.service.ChannelService;
 import com.sprint.mission.discodeit.service.MessageService;
+import com.sprint.mission.discodeit.service.UserService;
 
 import java.util.*;
 
 public class JCFMessageService implements MessageService {
     private final Map<UUID, Message> data;
+    private final ChannelService cs;
+    private final UserService us;
 
-    public JCFMessageService() {data = new HashMap<>();}
+    public JCFMessageService(ChannelService cs, UserService us) {
+        data = new HashMap<>();
+        this.cs = cs;
+        this.us = us;
+    }
 
     @Override
     public Message save(Message message) {
         if (message == null) throw new IllegalArgumentException("message is null.");
-        if (message.getChannel() == null) throw new IllegalArgumentException("channel is null.");
-        if (message.getUser() == null) throw new IllegalArgumentException("user is null.");
+        if (message.getChannelId() == null) throw new IllegalArgumentException("channel is null.");
+        cs.findById(message.getChannelId());
+        if (message.getUserId() == null) throw new IllegalArgumentException("user is null.");
+        us.findById(message.getUserId());
 
         data.put(message.getId(), message);
         return message;
@@ -24,18 +32,20 @@ public class JCFMessageService implements MessageService {
 
     @Override
     public Message findById(UUID id) {
-        if(id == null) throw new RuntimeException("id is null.");
+        if (id == null) throw new IllegalArgumentException("id is null.");
 
-        return data.get(id);
+        return Optional.ofNullable(data.get(id))
+                .orElseThrow(() -> new NoSuchElementException("message not found."));
     }
 
     @Override
     public List<Message> findByChannelId(UUID channelId) {
-        if(channelId == null) throw new RuntimeException("channelId is null.");
+        if (channelId == null) throw new IllegalArgumentException("channelId is null.");
 
         List<Message> list = new ArrayList<>();
+
         for (Message value : data.values()) {
-            if(value.getChannel().getId().equals(channelId)) list.add(value);
+            if (value.getChannelId().equals(channelId)) list.add(value);
         }
         list.sort(Comparator.comparing(Message::getUpdatedAt));
         return list;
@@ -43,33 +53,20 @@ public class JCFMessageService implements MessageService {
 
     @Override
     public List<Message> findByUserId(UUID userId) {
-        if(userId == null) throw new RuntimeException("userId is null.");
+        if (userId == null) throw new IllegalArgumentException("userId is null.");
 
         List<Message> list = new ArrayList<>();
+
         for (Message value : data.values()) {
-            if(value.getUser().getId().equals(userId)) list.add(value);
+            if (value.getUserId().equals(userId)) list.add(value);
         }
         list.sort(Comparator.comparing(Message::getUpdatedAt));
         return list;
     }
 
-    @Override
-    public List<Message> findByKeyword(String keyword) {
-        if(keyword == null) throw new RuntimeException("keyword is null.");
-
-        List<Message> list = new ArrayList<>();
-        for (Message value : data.values()) {
-            if(value.getUser().getNickname().contains(keyword) ||
-                    value.getChannel().getName().contains(keyword) ||
-                    value.getContent().contains(keyword)) list.add(value);
-        }
-        list.sort(Comparator.comparing(Message::getUpdatedAt));
-        return list;
-    }
 
     @Override
     public List<Message> findAll() {
-//        리스트 전체를 넘기는게 아니라 new로 넘겨줘야한다.
         List<Message> list = new ArrayList<>(data.values());
         list.sort(Comparator.comparing(Message::getUpdatedAt));
         return list;
@@ -77,14 +74,13 @@ public class JCFMessageService implements MessageService {
 
     @Override
     public boolean update(UUID userId, UUID messageId, String content) {
-        if (messageId == null) throw new IllegalArgumentException("messageId is null.");
         if (userId == null) throw new IllegalArgumentException("userId is null.");
+        if (messageId == null) throw new IllegalArgumentException("messageId is null.");
         if (content == null) throw new IllegalArgumentException("content is null.");
 
         Message message = findById(messageId);
-        if (message == null) throw new IllegalArgumentException("message not found.");
 
-        if(!message.getUser().getId().equals(userId)) return false;
+        if (!message.getUserId().equals(userId)) return false;
 
         message.update(content);
         return true;
@@ -92,13 +88,12 @@ public class JCFMessageService implements MessageService {
 
     @Override
     public boolean delete(UUID userId, UUID messageId) {
-        if (messageId == null) throw new IllegalArgumentException("messageId is null.");
         if (userId == null) throw new IllegalArgumentException("userId is null.");
+        if (messageId == null) throw new IllegalArgumentException("messageId is null.");
 
         Message message = findById(messageId);
-        if (message == null) throw new IllegalArgumentException("message not found.");
 
-        if(!message.getUser().getId().equals(userId)) return false;
+        if (!message.getUserId().equals(userId)) return false;
 
         data.remove(messageId);
         return true;

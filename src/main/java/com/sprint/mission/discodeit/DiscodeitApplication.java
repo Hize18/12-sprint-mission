@@ -3,43 +3,30 @@ package com.sprint.mission.discodeit;
 import com.sprint.mission.discodeit.entity.Channel;
 import com.sprint.mission.discodeit.entity.Message;
 import com.sprint.mission.discodeit.entity.User;
-import com.sprint.mission.discodeit.repository.ChannelRepository;
-import com.sprint.mission.discodeit.repository.MessageRepository;
-import com.sprint.mission.discodeit.repository.UserRepository;
-import com.sprint.mission.discodeit.repository.file.FileChannelRepository;
-import com.sprint.mission.discodeit.repository.file.FileMessageRepository;
-import com.sprint.mission.discodeit.repository.file.FileUserRepository;
 import com.sprint.mission.discodeit.service.ChannelService;
 import com.sprint.mission.discodeit.service.MessageService;
 import com.sprint.mission.discodeit.service.UserService;
-import com.sprint.mission.discodeit.service.basic.BasicChannelService;
-import com.sprint.mission.discodeit.service.basic.BasicMessageService;
-import com.sprint.mission.discodeit.service.basic.BasicUserService;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.ConfigurableApplicationContext;
 
-public class JavaApplication {
-    static User currentUser;
-
+@SpringBootApplication
+public class DiscodeitApplication {
 
     public static void main(String[] args) {
-        UserRepository ur = new FileUserRepository();
-        ChannelRepository cr = new FileChannelRepository();
-        MessageRepository mr = new FileMessageRepository();
+        ConfigurableApplicationContext context = SpringApplication.run(DiscodeitApplication.class, args);
 
-        UserService us = new BasicUserService(ur);
-        ChannelService cs = new BasicChannelService(cr, ur);
-        MessageService ms = new BasicMessageService(mr, cr, ur);
+        UserService us = context.getBean(UserService.class);
+        ChannelService cs = context.getBean(ChannelService.class);
+        MessageService ms = context.getBean(MessageService.class);
 
-//        UserService us = new BasicUserService(new JCFUserRepository());
-//        ChannelService cs = new BasicChannelService(new JCFChannelRepository());
-//        MessageService ms = new BasicMessageService(new JCFMessageRepository());
+        User currentUser = initData(us, cs, ms);
 
-        currentUser = initData(us, cs, ms);
-
-        testPrintAllEntities(us, cs, ms);
-        testModifyEntities(us, cs, ms);
-        testDeleteEntities(us, cs, ms);
-
+        testPrintAllEntities(us, cs, ms, currentUser);
+        testModifyEntities(us, cs, ms, currentUser);
+        testDeleteEntities(us, cs, ms, currentUser);
     }
+
 
     public static User initData(UserService us, ChannelService cs, MessageService ms) {
         User user1 = saveMethod(us, new User("test1", "test1@aaa.com", "1234"));
@@ -50,7 +37,6 @@ public class JavaApplication {
         ch[0] = saveMethod(cs, new Channel(user1, "test1_channel"));
         ch[1] = saveMethod(cs, new Channel(user2, "test2_channel"));
         ch[2] = saveMethod(cs, new Channel(user3, "test3_channel"));
-
         if (ms.findAll().isEmpty()) {
             for (int i = 0; i < 3; i++) {
                 saveMethod(ms, new Message(ch[i].getId(), user1.getId(), "test" + (i + 11)));
@@ -65,7 +51,7 @@ public class JavaApplication {
         return user3;
     }
 
-    public static void testPrintAllEntities(UserService us, ChannelService cs, MessageService ms) {
+    public static void testPrintAllEntities(UserService us, ChannelService cs, MessageService ms, User currentUser) {
         System.out.println("\n==========조회==========");
         System.out.println("++++++++++전체++++++++++");
         System.out.println("----------유저 조회----------");
@@ -88,7 +74,7 @@ public class JavaApplication {
         System.out.println(ms.findById(ms.findByUserId(currentUser.getId()).get(0).getId()));
     }
 
-    public static void testModifyEntities(UserService us, ChannelService cs, MessageService ms) {
+    public static void testModifyEntities(UserService us, ChannelService cs, MessageService ms, User currentUser) {
         System.out.println("\n==========수정==========");
 
         System.out.println("++++++++++유저 수정++++++++++");
@@ -116,7 +102,7 @@ public class JavaApplication {
         }
     }
 
-    public static void testDeleteEntities(UserService us, ChannelService cs, MessageService ms) {
+    public static void testDeleteEntities(UserService us, ChannelService cs, MessageService ms, User currentUser) {
         Channel channel1 = cs.findByOwner(us.findByUsername("test1").getId()).get(0);
         System.out.println("\n==========삭제==========");
         System.out.println("++++++++++유저 삭제++++++++++");

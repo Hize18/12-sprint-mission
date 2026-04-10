@@ -3,41 +3,48 @@ package com.sprint.mission.discodeit.service.basic;
 import com.sprint.mission.discodeit.entity.User;
 import com.sprint.mission.discodeit.repository.UserRepository;
 import com.sprint.mission.discodeit.service.UserService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.UUID;
 
+@RequiredArgsConstructor
+@Service
 public class BasicUserService implements UserService {
     private final UserRepository ur;
 
-    public BasicUserService(UserRepository userRepository) {
-        this.ur = userRepository;
-    }
-
     @Override
     public boolean isUniqueUsername(String username) {
-        if(username == null) throw new IllegalArgumentException("username is null.");
+        if (username == null) throw new IllegalArgumentException("username is null.");
 
-        for (User user : ur.findAll()) {
-            if(user.getUsername().equals(username)) return false;
-        }
-        return true;
+        return ur.findAll().stream()
+                .noneMatch(user -> Objects.equals(user.getUsername(), username));
     }
 
     @Override
     public boolean isUniqueEmail(String email) {
-        if(email == null) throw new IllegalArgumentException("email is null.");
+        if (email == null) throw new IllegalArgumentException("email is null.");
 
-        for (User user : ur.findAll()) {
-            if(user.getEmail().equals(email)) return false;
-        }
-        return true;
+        return ur.findAll().stream()
+                .noneMatch(user -> Objects.equals(user.getEmail(), email));
     }
 
     @Override
     public User save(User user) {
 //        Objects.requireNonNull(user, "user is null.");
         if (user == null) throw new IllegalArgumentException("user is null.");
+
+        if (user.getUsername() == null) throw new IllegalArgumentException("username is null.");
+        if (user.getEmail() == null) throw new IllegalArgumentException("email is null.");
+        if (user.getPassword() == null) throw new IllegalArgumentException("password is null.");
+
+        if (user.getUsername().isBlank()) throw new IllegalArgumentException("username is blank.");
+        if (user.getEmail().isBlank()) throw new IllegalArgumentException("email is blank.");
+        if (user.getPassword().isBlank()) throw new IllegalArgumentException("password is blank.");
+
         if (!isUniqueUsername(user.getUsername())) throw new IllegalStateException("username is duplicate.");
         if (!isUniqueEmail(user.getEmail())) throw new IllegalStateException("email is duplicate.");
 
@@ -48,21 +55,14 @@ public class BasicUserService implements UserService {
     public User findById(UUID id) {
         if (id == null) throw new IllegalArgumentException("id is null.");
 
-        return ur.findById(id);
+        return ur.findById(id).orElseThrow(() -> new NoSuchElementException("user not found."));
     }
 
     @Override
     public User findByUsername(String username) {
-        if(username == null) throw new IllegalArgumentException("username is null.");
+        if (username == null) throw new IllegalArgumentException("username is null.");
 
-        return ur.findByUsername(username);
-    }
-
-    @Override
-    public List<User> findByNickname(String nickname) {
-        if(nickname == null) throw new IllegalArgumentException("nickname is null.");
-
-        return ur.findByNickname(nickname);
+        return ur.findByUsername(username).orElseThrow(() -> new NoSuchElementException("user not found."));
     }
 
     @Override
@@ -77,20 +77,18 @@ public class BasicUserService implements UserService {
         if (userData == null) throw new IllegalArgumentException("userData is null.");
 
         User loginUser = findById(srcUserId);
-        if (loginUser == null) throw new IllegalStateException("src user not found.");
 
-        if (!srcUserId.equals(dstUserId)) return false;
+        if (!Objects.equals(srcUserId, dstUserId)) return false;
 
-        User tempUser = new User(loginUser);
+        User tempUser = User.copyOf(loginUser);
 
         String username = loginUser.getUsername();
         String email = loginUser.getEmail();
         String password = loginUser.getPassword();
-        String nickname = loginUser.getNickname();
 
         if (userData.getUsername() != null && !userData.getUsername().isEmpty()) {
             if (!isUniqueUsername(userData.getUsername()) &&
-                    !userData.getUsername().equals(loginUser.getUsername())) {
+                    !Objects.equals(userData.getUsername(), loginUser.getUsername())) {
                 throw new IllegalStateException("username is duplicate.");
             }
             username = userData.getUsername();
@@ -98,7 +96,7 @@ public class BasicUserService implements UserService {
 
         if (userData.getEmail() != null && !userData.getEmail().isEmpty()) {
             if (!isUniqueEmail(userData.getEmail()) &&
-                    !userData.getEmail().equals(loginUser.getEmail())) {
+                    !Objects.equals(userData.getEmail(), loginUser.getEmail())) {
                 throw new IllegalStateException("email is duplicate.");
             }
             email = userData.getEmail();
@@ -108,24 +106,9 @@ public class BasicUserService implements UserService {
             password = userData.getPassword();
         }
 
-        if (userData.getNickname() != null && !userData.getNickname().isEmpty()) {
-            nickname = userData.getNickname();
-        }
-
-        tempUser.update(username, email, password, nickname);
+        tempUser.update(username, email, password);
         ur.save(tempUser);
         return true;
-    }
-
-//    따로 메서드 만드는게 좋음.
-    public boolean updatePassword(UUID srcUserId, UUID dstUserId, String password){
-        User srcUser = findById(srcUserId);
-        if(srcUser == null) throw new IllegalStateException("src user not found.");
-
-        User tempUser = new User(srcUser);
-        tempUser.update(tempUser.getUsername(), tempUser.getEmail(), password, tempUser.getNickname());
-
-        return update(srcUserId,dstUserId, tempUser);
     }
 
     @Override
@@ -133,10 +116,9 @@ public class BasicUserService implements UserService {
         if (srcUserId == null) throw new IllegalArgumentException("srcUserId is null.");
         if (dstUserId == null) throw new IllegalArgumentException("dstUserId is null.");
 
-        User loginUser = findById(srcUserId);
-        if (loginUser == null) throw new IllegalStateException("src user not found.");
+        findById(srcUserId);
 
-        if (!srcUserId.equals(dstUserId)) return false;
+        if (!Objects.equals(srcUserId, dstUserId)) return false;
 
         ur.delete(dstUserId);
         return true;
