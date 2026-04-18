@@ -1,0 +1,36 @@
+package com.sprint.mission.discodeit.entity;
+
+import lombok.Getter;
+
+import java.io.Serial;
+import java.io.Serializable;
+import java.time.Instant;
+import java.util.Arrays;
+import java.util.UUID;
+
+@Getter
+public class BinaryContent implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 1L;
+    private final UUID id;
+    private final String fileName;
+    private final String contentType;
+    private final byte[] content;
+    private final Instant createdAt;
+
+    public BinaryContent(String fileName, String contentType, byte[] content) {
+        if (fileName == null) throw new IllegalArgumentException("fileName is null.");
+        if (contentType == null) throw new IllegalArgumentException("contentType is null.");
+        if (content == null) throw new IllegalArgumentException("content is null.");
+
+        if (fileName.isBlank()) throw new IllegalArgumentException("fileName is blank.");
+        if (contentType.isBlank()) throw new IllegalArgumentException("contentType is blank.");
+        if (content.length == 0) throw new IllegalArgumentException("content is empty.");
+
+        this.id = UUID.randomUUID();
+        this.fileName = fileName;
+        this.contentType = contentType;
+        this.content = Arrays.copyOf(content, content.length);
+        this.createdAt = Instant.now();
+    }
+}

@@ -1,6 +1,8 @@
 package com.sprint.mission.discodeit.service;
 
-import com.sprint.mission.discodeit.entity.User;
+import com.sprint.mission.discodeit.dto.user.UserCreateRequest;
+import com.sprint.mission.discodeit.dto.user.UserResponse;
+import com.sprint.mission.discodeit.dto.user.UserUpdateRequest;
 
 import java.util.List;
 import java.util.UUID;
@@ -10,15 +12,15 @@ public interface UserService {
 
     boolean isUniqueEmail(String email);
 
-    User save(User user);
+    UserResponse create(UserCreateRequest request);
 
-    User findById(UUID id);
+    UserResponse findById(UUID id);
 
-    User findByUsername(String username);
+    UserResponse findByUsername(String username);
 
-    List<User> findAll();
+    List<UserResponse> findAll();
 
-    boolean update(UUID srcUserId, UUID dstUserId, User userData);
+    boolean update(UUID srcUserId, UUID dstUserId, UserUpdateRequest request);
 
     boolean delete(UUID srcUserId, UUID dstUserId);
 }
