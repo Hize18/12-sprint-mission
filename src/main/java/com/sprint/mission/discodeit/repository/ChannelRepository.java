@@ -3,14 +3,19 @@ package com.sprint.mission.discodeit.repository;
 import com.sprint.mission.discodeit.entity.Channel;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface ChannelRepository {
     Channel save(Channel channel);
-    Channel findById(UUID id);
-    Channel findByHandle(String handle);
-    List<Channel> findByOwner(UUID ownerId);
-    List<Channel> findByName(String name);
+
+    Optional<Channel> findById(UUID id);
+
+    Optional<Channel> findByName(String name);
+
+    List<Channel> findByOwnerId(UUID ownerId);
+
     List<Channel> findAll();
+
     void delete(UUID id);
 }

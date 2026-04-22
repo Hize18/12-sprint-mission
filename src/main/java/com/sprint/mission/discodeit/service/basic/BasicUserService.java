@@ -1,131 +1,142 @@
 package com.sprint.mission.discodeit.service.basic;
 
+import com.sprint.mission.discodeit.dto.binaryContent.BinaryContentCreateRequest;
+import com.sprint.mission.discodeit.dto.user.UserCreateRequest;
+import com.sprint.mission.discodeit.dto.user.UserResponse;
+import com.sprint.mission.discodeit.dto.user.UserUpdateRequest;
+import com.sprint.mission.discodeit.entity.BinaryContent;
 import com.sprint.mission.discodeit.entity.User;
+import com.sprint.mission.discodeit.entity.UserStatus;
+import com.sprint.mission.discodeit.repository.BinaryContentRepository;
 import com.sprint.mission.discodeit.repository.UserRepository;
+import com.sprint.mission.discodeit.repository.UserStatusRepository;
 import com.sprint.mission.discodeit.service.UserService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.UUID;
 
+@Service
+@RequiredArgsConstructor
 public class BasicUserService implements UserService {
     private final UserRepository ur;
-
-    public BasicUserService(UserRepository userRepository) {
-        this.ur = userRepository;
-    }
+    private final BinaryContentRepository bcr;
+    private final UserStatusRepository usr;
 
     @Override
     public boolean isUniqueUsername(String username) {
-        if(username == null) throw new IllegalArgumentException("username is null.");
+        if (username == null) throw new IllegalArgumentException("username is null.");
 
-        for (User user : ur.findAll()) {
-            if(user.getUsername().equals(username)) return false;
-        }
-        return true;
+        return ur.findAll().stream()
+                .noneMatch(user -> Objects.equals(user.getUsername(), username));
     }
 
     @Override
     public boolean isUniqueEmail(String email) {
-        if(email == null) throw new IllegalArgumentException("email is null.");
+        if (email == null) throw new IllegalArgumentException("email is null.");
 
-        for (User user : ur.findAll()) {
-            if(user.getEmail().equals(email)) return false;
-        }
-        return true;
+        return ur.findAll().stream()
+                .noneMatch(user -> Objects.equals(user.getEmail(), email));
     }
 
     @Override
-    public User save(User user) {
-//        Objects.requireNonNull(user, "user is null.");
-        if (user == null) throw new IllegalArgumentException("user is null.");
-        if (!isUniqueUsername(user.getUsername())) throw new IllegalStateException("username is duplicate.");
-        if (!isUniqueEmail(user.getEmail())) throw new IllegalStateException("email is duplicate.");
+    public UserResponse create(UserCreateRequest request) {
+        validateCreateUser(request);
 
-        return ur.save(user);
+        UUID profileImageId = checkProfileImageId(request.profileImage());
+
+        User user = new User(
+                request.username(),
+                request.email(),
+                request.password(),
+                profileImageId
+        );
+        ur.save(user);
+
+        UserStatus userStatus = new UserStatus(user.getId());
+        usr.save(userStatus);
+
+        return UserResponse.from(user);
     }
 
     @Override
-    public User findById(UUID id) {
+    public UserResponse findById(UUID id) {
         if (id == null) throw new IllegalArgumentException("id is null.");
 
-        return ur.findById(id);
+        return UserResponse.from(
+                ur.findById(id).orElseThrow(() -> new NoSuchElementException("user not found."))
+        );
+    }
+
+    private User findEntityById(UUID id) {
+        if (id == null) throw new IllegalArgumentException("id is null.");
+
+        return ur.findById(id).orElseThrow(() -> new NoSuchElementException("user not found."));
     }
 
     @Override
-    public User findByUsername(String username) {
-        if(username == null) throw new IllegalArgumentException("username is null.");
+    public UserResponse findByUsername(String username) {
+        if (username == null) throw new IllegalArgumentException("username is null.");
 
-        return ur.findByUsername(username);
+        return UserResponse.from(
+                ur.findByUsername(username).orElseThrow(() -> new NoSuchElementException("user not found."))
+        );
     }
 
     @Override
-    public List<User> findByNickname(String nickname) {
-        if(nickname == null) throw new IllegalArgumentException("nickname is null.");
-
-        return ur.findByNickname(nickname);
+    public List<UserResponse> findAll() {
+        return ur.findAll().stream()
+                .map(UserResponse::from)
+                .toList();
     }
 
     @Override
-    public List<User> findAll() {
-        return ur.findAll();
-    }
-
-    @Override
-    public boolean update(UUID srcUserId, UUID dstUserId, User userData) {
+    public boolean update(UUID srcUserId, UUID dstUserId, UserUpdateRequest request) {
         if (srcUserId == null) throw new IllegalArgumentException("srcUserId is null.");
         if (dstUserId == null) throw new IllegalArgumentException("dstUserId is null.");
-        if (userData == null) throw new IllegalArgumentException("userData is null.");
+        if (request == null) throw new IllegalArgumentException("userUpdateRequest is null.");
 
-        User loginUser = findById(srcUserId);
-        if (loginUser == null) throw new IllegalStateException("src user not found.");
+        if (!Objects.equals(srcUserId, dstUserId)) return false;
 
-        if (!srcUserId.equals(dstUserId)) return false;
+        User targetUser = findEntityById(dstUserId);
 
-        User tempUser = new User(loginUser);
+        User tempUser = User.copyOf(targetUser);
 
-        String username = loginUser.getUsername();
-        String email = loginUser.getEmail();
-        String password = loginUser.getPassword();
-        String nickname = loginUser.getNickname();
+        String username = targetUser.getUsername();
+        String email = targetUser.getEmail();
+        String password = targetUser.getPassword();
+        UUID profileImageId = targetUser.getProfileId();
 
-        if (userData.getUsername() != null && !userData.getUsername().isEmpty()) {
-            if (!isUniqueUsername(userData.getUsername()) &&
-                    !userData.getUsername().equals(loginUser.getUsername())) {
-                throw new IllegalStateException("username is duplicate.");
+        if (request.username() != null) {
+            validateDuplicateUsername(request.username(), targetUser.getUsername());
+            username = request.username();
+        }
+
+        if (request.email() != null) {
+            validateDuplicateEmail(request.email(), targetUser.getEmail());
+            email = request.email();
+        }
+
+        if (request.password() != null) {
+            password = request.password();
+        }
+
+        if(request.profileImage() != null) {
+            UUID oldProfileImageId = profileImageId;
+
+            profileImageId = checkProfileImageId(request.profileImage());
+
+            if (oldProfileImageId != null) {
+                bcr.delete(oldProfileImageId);
             }
-            username = userData.getUsername();
         }
 
-        if (userData.getEmail() != null && !userData.getEmail().isEmpty()) {
-            if (!isUniqueEmail(userData.getEmail()) &&
-                    !userData.getEmail().equals(loginUser.getEmail())) {
-                throw new IllegalStateException("email is duplicate.");
-            }
-            email = userData.getEmail();
-        }
-
-        if (userData.getPassword() != null && !userData.getPassword().isEmpty()) {
-            password = userData.getPassword();
-        }
-
-        if (userData.getNickname() != null && !userData.getNickname().isEmpty()) {
-            nickname = userData.getNickname();
-        }
-
-        tempUser.update(username, email, password, nickname);
+        tempUser.update(username, email, password, profileImageId);
         ur.save(tempUser);
         return true;
-    }
-
-//    따로 메서드 만드는게 좋음.
-    public boolean updatePassword(UUID srcUserId, UUID dstUserId, String password){
-        User srcUser = findById(srcUserId);
-        if(srcUser == null) throw new IllegalStateException("src user not found.");
-
-        User tempUser = new User(srcUser);
-        tempUser.update(tempUser.getUsername(), tempUser.getEmail(), password, tempUser.getNickname());
-
-        return update(srcUserId,dstUserId, tempUser);
     }
 
     @Override
@@ -133,12 +144,56 @@ public class BasicUserService implements UserService {
         if (srcUserId == null) throw new IllegalArgumentException("srcUserId is null.");
         if (dstUserId == null) throw new IllegalArgumentException("dstUserId is null.");
 
-        User loginUser = findById(srcUserId);
-        if (loginUser == null) throw new IllegalStateException("src user not found.");
+        if (!Objects.equals(srcUserId, dstUserId)) return false;
 
-        if (!srcUserId.equals(dstUserId)) return false;
+        User targetUser = findEntityById(dstUserId);
+
+        UserStatus userStatus = usr.findByUserId(targetUser.getId())
+                .orElseThrow(() -> new NoSuchElementException("userStatus not found."));
+
+        UUID profileImageId = targetUser.getProfileId();
+        if (profileImageId != null) {
+            bcr.delete(profileImageId);
+        }
 
         ur.delete(dstUserId);
+        usr.delete(userStatus.getId());
         return true;
+    }
+
+    private UUID checkProfileImageId(BinaryContentCreateRequest profileImage) {
+        UUID profileImageId = null;
+
+        if(profileImage != null){
+            BinaryContent bc = new BinaryContent(
+                    profileImage.fileName(),
+                    profileImage.contentType(),
+                    profileImage.data()
+            );
+            bcr.save(bc);
+            profileImageId = bc.getId();
+        }
+        return profileImageId;
+    }
+
+    private void validateCreateUser(UserCreateRequest request) {
+        if (request == null) throw new IllegalArgumentException("user is null.");
+
+        if (!isUniqueUsername(request.username())) throw new IllegalStateException("username is duplicate.");
+        if (!isUniqueEmail(request.email())) throw new IllegalStateException("email is duplicate.");
+    }
+
+    private void validateDuplicateUsername(String newUsername, String oldUsername) {
+        boolean isChangedUsername = !Objects.equals(newUsername, oldUsername);
+        if (isChangedUsername && !isUniqueUsername(newUsername)) {
+            throw new IllegalStateException("username is duplicate.");
+        }
+    }
+
+    private void validateDuplicateEmail(String newEmail, String oldEmail) {
+        boolean isChangedEmail = !Objects.equals(newEmail, oldEmail);
+        if (isChangedEmail && !isUniqueEmail(newEmail)) {
+            throw new IllegalStateException("email is duplicate.");
+        }
     }
 }

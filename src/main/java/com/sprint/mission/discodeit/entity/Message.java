@@ -1,80 +1,60 @@
 package com.sprint.mission.discodeit.entity;
 
+import lombok.Getter;
+
 import java.io.Serial;
 import java.io.Serializable;
-import java.sql.Timestamp;
-import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
+@Getter
 public class Message implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
     private final UUID id;
-    private final Channel channel;
-    private final User user;
+    private final UUID channelId;
+    private final UUID userId;
     private String content;
-    private final Long createdAt;
-    private Long updatedAt;
+    private List<UUID> attachmentIds;
+    private final Instant createdAt;
+    private Instant updatedAt;
 
-    public Message(Channel channel, User user, String content) {
-        if(channel == null || user == null || content == null) throw new IllegalArgumentException("Message is null.");
+    public Message(UUID channelId, UUID userId, String content, List<UUID> attachmentIds) {
+        if (channelId == null || userId == null || content == null || attachmentIds == null)
+            throw new IllegalArgumentException("Message is null.");
 
         this.id = UUID.randomUUID();
-        this.channel = channel;
-        this.user = user;
+        this.channelId = channelId;
+        this.userId = userId;
+        this.attachmentIds = List.copyOf(attachmentIds);
         this.content = content;
-        this.createdAt = System.currentTimeMillis();
+        this.createdAt = Instant.now();
         this.updatedAt = createdAt;
     }
 
     public Message(Message message) {
-        if(message == null) throw new IllegalArgumentException("Message is null.");
+        if (message == null) throw new IllegalArgumentException("Message is null.");
 
         this.id = message.getId();
-        this.channel = message.getChannel();
-        this.user = message.getUser();
+        this.channelId = message.getChannelId();
+        this.userId = message.getUserId();
+        this.attachmentIds = List.copyOf(message.getAttachmentIds());
         this.content = message.getContent();
         this.createdAt = message.getCreatedAt();
         this.updatedAt = message.getUpdatedAt();
     }
 
-    public UUID getId() {
-        return id;
+    public static Message copyOf(Message message){
+        return new Message(message);
     }
 
-    public Channel getChannel() {
-        return channel;
-    }
+    public void update(String content, List<UUID> attachmentIds) {
+        if (content == null || attachmentIds == null)
+            throw new IllegalArgumentException("Message update error.");
 
-    public User getUser() {return user;}
-
-    public String getContent() {
-        return content;
-    }
-
-    public Long getCreatedAt() {
-        return createdAt;
-    }
-
-    public Long getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void update(String content){
-        if(content == null) throw new IllegalArgumentException("Message update error.");
-
+        this.attachmentIds = List.copyOf(attachmentIds);
         this.content = content;
-        this.updatedAt = System.currentTimeMillis();
-    }
-
-    @Override
-    public String toString() {
-        return "[" +
-                "nickname = " + user.getNickname() +
-                ", content = " + content +
-                "]\t시간 = " +
-                new SimpleDateFormat("yyyy-MM-dd HH:mm")
-                        .format(new Timestamp(updatedAt)) +
-                (updatedAt > createdAt ? "(수정됨)":"");
+        this.updatedAt = Instant.now();
     }
 }

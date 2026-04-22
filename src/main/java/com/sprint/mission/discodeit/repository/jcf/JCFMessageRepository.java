@@ -8,7 +8,9 @@ import java.util.*;
 public class JCFMessageRepository implements MessageRepository {
     private final Map<UUID, Message> data;
 
-    public JCFMessageRepository() {data = new HashMap<>();}
+    public JCFMessageRepository() {
+        data = new HashMap<>();
+    }
 
     @Override
     public Message save(Message message) {
@@ -17,15 +19,16 @@ public class JCFMessageRepository implements MessageRepository {
     }
 
     @Override
-    public Message findById(UUID id) {
-        return data.get(id);
+    public Optional<Message> findById(UUID id) {
+        return Optional.ofNullable(data.get(id));
     }
 
     @Override
     public List<Message> findByChannelId(UUID channelId) {
         List<Message> list = new ArrayList<>();
+
         for (Message value : data.values()) {
-            if(value.getChannel().getId().equals(channelId)) list.add(value);
+            if (Objects.equals(value.getChannelId(), channelId)) list.add(value);
         }
         list.sort(Comparator.comparing(Message::getUpdatedAt));
         return list;
@@ -34,20 +37,9 @@ public class JCFMessageRepository implements MessageRepository {
     @Override
     public List<Message> findByUserId(UUID userId) {
         List<Message> list = new ArrayList<>();
-        for (Message value : data.values()) {
-            if(value.getUser().getId().equals(userId)) list.add(value);
-        }
-        list.sort(Comparator.comparing(Message::getUpdatedAt));
-        return list;
-    }
 
-    @Override
-    public List<Message> findByKeyword(String keyword) {
-        List<Message> list = new ArrayList<>();
         for (Message value : data.values()) {
-            if(value.getUser().getNickname().contains(keyword) ||
-                    value.getChannel().getName().contains(keyword) ||
-                    value.getContent().contains(keyword)) list.add(value);
+            if (Objects.equals(value.getUserId(), userId)) list.add(value);
         }
         list.sort(Comparator.comparing(Message::getUpdatedAt));
         return list;
