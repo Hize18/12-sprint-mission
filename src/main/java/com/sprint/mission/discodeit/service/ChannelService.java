@@ -9,8 +9,6 @@ import java.util.List;
 import java.util.UUID;
 
 public interface ChannelService {
-    boolean isUniqueName(String name);
-
     ChannelResponse createPublicChannel(PublicChannelCreateRequest request);
 
     ChannelResponse createPrivateChannel(PrivateChannelCreateRequest request);
@@ -23,7 +21,7 @@ public interface ChannelService {
 
     List<ChannelResponse> findAllByUserId(UUID userId);
 
-    boolean update(UUID userId, ChannelUpdateRequest request);
+    void update(UUID userId, UUID channelId, ChannelUpdateRequest request);
 
-    boolean delete(UUID userId, UUID channelId);
+    void delete(UUID userId, UUID channelId);
 }

@@ -19,5 +19,7 @@ public interface ReadStatusRepository {
 
     List<ReadStatus> findAll();
 
+    boolean existsById(UUID id);
+
     void delete(UUID id);
 }

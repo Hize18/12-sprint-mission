@@ -16,14 +16,14 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class BasicBinaryContentService implements BinaryContentService {
-    private final BinaryContentRepository bcr;
+    private final BinaryContentRepository binaryContentRepository;
 
     @Override
     public BinaryContentResponse create(BinaryContentCreateRequest request) {
         if (request == null) throw new IllegalArgumentException("request is null.");
 
-        BinaryContent bc = new BinaryContent(request.fileName(), request.contentType(), request.data());
-        bcr.save(bc);
+        BinaryContent bc = new BinaryContent(request.fileName(), request.contentType(), request.bytes());
+        binaryContentRepository.save(bc);
 
         return BinaryContentResponse.from(bc);
     }
@@ -33,7 +33,7 @@ public class BasicBinaryContentService implements BinaryContentService {
         if (id == null) throw new IllegalArgumentException("id is null.");
 
         return BinaryContentResponse.from(
-                bcr.findById(id).orElseThrow(() -> new NoSuchElementException("binaryContent not found"))
+                binaryContentRepository.findById(id).orElseThrow(() -> new NoSuchElementException("binaryContent not found"))
         );
     }
 
@@ -43,18 +43,17 @@ public class BasicBinaryContentService implements BinaryContentService {
 
         return idList.stream()
                 .filter(Objects::nonNull)
-                .map(id -> bcr.findById(id)
+                .map(id -> binaryContentRepository.findById(id)
                         .orElseThrow(() -> new NoSuchElementException("not found: " + id)))
                 .map(BinaryContentResponse::from)
                 .toList();
     }
 
     @Override
-    public boolean delete(UUID id) {
+    public void delete(UUID id) {
         if (id == null) throw new IllegalArgumentException("id is null.");
 
-        bcr.findById(id).orElseThrow(() -> new NoSuchElementException("binaryContent not found"));
-        bcr.delete(id);
-        return true;
+        if(!binaryContentRepository.existsById(id)) throw new NoSuchElementException("binaryContent not found");
+        binaryContentRepository.delete(id);
     }
 }

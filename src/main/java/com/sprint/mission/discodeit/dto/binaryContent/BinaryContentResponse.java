@@ -12,7 +12,7 @@ public record BinaryContentResponse(
         UUID id,
         String fileName,
         String contentType,
-        byte[] content,
+        byte[] bytes,
         Instant createdAt
 ) {
     public static BinaryContentResponse from(BinaryContent bc) {
@@ -22,7 +22,7 @@ public record BinaryContentResponse(
                 bc.getId(),
                 bc.getFileName(),
                 bc.getContentType(),
-                Arrays.copyOf(bc.getContent(), bc.getContent().length),
+                Arrays.copyOf(bc.getBytes(), bc.getBytes().length),
                 bc.getCreatedAt()
         );
     }
