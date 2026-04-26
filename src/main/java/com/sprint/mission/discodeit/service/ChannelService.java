@@ -4,24 +4,24 @@ import com.sprint.mission.discodeit.dto.channel.ChannelResponse;
 import com.sprint.mission.discodeit.dto.channel.ChannelUpdateRequest;
 import com.sprint.mission.discodeit.dto.channel.PrivateChannelCreateRequest;
 import com.sprint.mission.discodeit.dto.channel.PublicChannelCreateRequest;
-
 import java.util.List;
 import java.util.UUID;
 
 public interface ChannelService {
-    ChannelResponse createPublicChannel(PublicChannelCreateRequest request);
 
-    ChannelResponse createPrivateChannel(PrivateChannelCreateRequest request);
+  ChannelResponse createPublicChannel(PublicChannelCreateRequest request);
 
-    ChannelResponse findById(UUID id);
+  ChannelResponse createPrivateChannel(PrivateChannelCreateRequest request);
 
-    ChannelResponse findByName(String name);
+  ChannelResponse findById(UUID id);
 
-    List<ChannelResponse> findAll();
+  ChannelResponse findByName(String name);
 
-    List<ChannelResponse> findAllByUserId(UUID userId);
+  List<ChannelResponse> findAll();
 
-    void update(UUID userId, UUID channelId, ChannelUpdateRequest request);
+  List<ChannelResponse> findAllByUserId(UUID userId);
 
-    void delete(UUID userId, UUID channelId);
+  ChannelResponse update(UUID userId, UUID channelId, ChannelUpdateRequest request);
+
+  void delete(UUID userId, UUID channelId);
 }

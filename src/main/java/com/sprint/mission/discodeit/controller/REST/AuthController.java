@@ -15,31 +15,36 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class AuthController {
-    private final AuthService authService;
 
-    @RequestMapping(value = "/login", method = RequestMethod.POST)
-    public ResponseEntity<UserResponse> login(
-            @RequestBody LoginRequest loginRequest,
-            HttpSession session
-    ){
-        UserResponse userResponse = authService.login(loginRequest);
-        session.setAttribute("loginUser", userResponse);
-        return ResponseEntity.ok(userResponse);
-    }
+  private final AuthService authService;
 
-    @RequestMapping(value = "/checkUser", method = RequestMethod.GET)
-    public ResponseEntity<UserResponse> checkUser(
-            HttpSession session
-    ){
-        UserResponse userResponse = (UserResponse) session.getAttribute("loginUser");
-        if(userResponse == null) throw new IllegalArgumentException("not login yet.");
-        return ResponseEntity.ok(userResponse);
-    }
+  @RequestMapping(value = "/login", method = RequestMethod.POST)
+  public ResponseEntity<UserResponse> login(
+      @RequestBody LoginRequest loginRequest,
+      HttpSession session
+  ) {
+    UserResponse userResponse = authService.login(loginRequest);
+    session.setAttribute("loginUser", userResponse);
+    return ResponseEntity.ok(userResponse);
+  }
 
-    @RequestMapping(value = "/logout", method = RequestMethod.POST)
-    public ResponseEntity<Void> logout(HttpSession session){
-        if(session.getAttribute("loginUser") == null) throw new IllegalArgumentException("not login yet.");
-        session.invalidate();
-        return ResponseEntity.noContent().build();
+  @RequestMapping(value = "/checkUser", method = RequestMethod.GET)
+  public ResponseEntity<UserResponse> checkUser(
+      HttpSession session
+  ) {
+    UserResponse userResponse = (UserResponse) session.getAttribute("loginUser");
+    if (userResponse == null) {
+      throw new IllegalArgumentException("not login yet.");
     }
+    return ResponseEntity.ok(userResponse);
+  }
+
+  @RequestMapping(value = "/logout", method = RequestMethod.POST)
+  public ResponseEntity<Void> logout(HttpSession session) {
+    if (session.getAttribute("loginUser") == null) {
+      throw new IllegalArgumentException("not login yet.");
+    }
+    session.invalidate();
+    return ResponseEntity.noContent().build();
+  }
 }
