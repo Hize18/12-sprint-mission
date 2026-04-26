@@ -2,6 +2,7 @@ package com.sprint.mission.discodeit.repository.file;
 
 import com.sprint.mission.discodeit.entity.ReadStatus;
 import com.sprint.mission.discodeit.repository.ReadStatusRepository;
+import com.sprint.mission.discodeit.util.FileLockProvider;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -16,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.locks.ReentrantLock;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Repository;
@@ -24,38 +26,51 @@ import org.springframework.stereotype.Repository;
 @ConditionalOnProperty(name = "12-sprint-mission.repository.type", havingValue = "file")
 public class FileReadStatusRepository implements ReadStatusRepository {
 
+  private final FileLockProvider fileLockProvider;
   private final Map<UUID, ReadStatus> data;
   private final Path path;
 
   public FileReadStatusRepository(
+      FileLockProvider fileLockProvider,
       @Value("${12-sprint-mission.repository.file-directory:data}") String directory
   ) {
+    this.fileLockProvider = fileLockProvider;
     path = Path.of(System.getProperty("user.dir"), directory, "readstatus.ser");
 
     Map<UUID, ReadStatus> temp;
+    ReentrantLock lock = this.fileLockProvider.getLock(this.path);
 
+    lock.lock();
     try {
       Files.createDirectories(path.getParent());
-        if (Files.exists(path)) {
-            try (FileInputStream fis = new FileInputStream(path.toFile());
-                ObjectInputStream ois = new ObjectInputStream(fis)) {
-                temp = (Map<UUID, ReadStatus>) ois.readObject();
-            }
-        } else {
-            temp = new HashMap<>();
+      if (Files.exists(path)) {
+        try (FileInputStream fis = new FileInputStream(path.toFile());
+            ObjectInputStream ois = new ObjectInputStream(fis)) {
+          temp = (Map<UUID, ReadStatus>) ois.readObject();
         }
+      } else {
+        temp = new HashMap<>();
+      }
     } catch (IOException | ClassNotFoundException e) {
       e.printStackTrace();
       temp = new HashMap<>();
+    } finally {
+      lock.unlock();
     }
+
     this.data = temp;
   }
 
   private void saveMap(Map<UUID, ReadStatus> map) {
+    ReentrantLock lock = this.fileLockProvider.getLock(this.path);
+    lock.lock();
+
     try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(path.toFile()))) {
       oos.writeObject(map);
     } catch (Exception e) {
       throw new IllegalStateException("readStatus file save failed.", e);
+    } finally {
+      lock.unlock();
     }
   }
 
@@ -86,9 +101,9 @@ public class FileReadStatusRepository implements ReadStatusRepository {
     List<ReadStatus> list = new ArrayList<>();
 
     for (ReadStatus value : data.values()) {
-        if (value.getUserId().equals(userId)) {
-            list.add(value);
-        }
+      if (value.getUserId().equals(userId)) {
+        list.add(value);
+      }
     }
     list.sort(Comparator.comparing(ReadStatus::getUpdatedAt));
     return list;
@@ -99,9 +114,9 @@ public class FileReadStatusRepository implements ReadStatusRepository {
     List<ReadStatus> list = new ArrayList<>();
 
     for (ReadStatus value : data.values()) {
-        if (value.getChannelId().equals(channelId)) {
-            list.add(value);
-        }
+      if (value.getChannelId().equals(channelId)) {
+        list.add(value);
+      }
     }
     list.sort(Comparator.comparing(ReadStatus::getUpdatedAt));
     return list;

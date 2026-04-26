@@ -2,6 +2,7 @@ package com.sprint.mission.discodeit.repository.file;
 
 import com.sprint.mission.discodeit.entity.User;
 import com.sprint.mission.discodeit.repository.UserRepository;
+import com.sprint.mission.discodeit.util.FileLockProvider;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -17,6 +18,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.locks.ReentrantLock;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Repository;
@@ -25,38 +27,51 @@ import org.springframework.stereotype.Repository;
 @ConditionalOnProperty(name = "12-sprint-mission.repository.type", havingValue = "file")
 public class FileUserRepository implements UserRepository {
 
+  private final FileLockProvider fileLockProvider;
   private final Map<UUID, User> data;
   private final Path path;
 
   public FileUserRepository(
+      FileLockProvider fileLockProvider,
       @Value("${12-sprint-mission.repository.file-directory:data}") String directory
   ) {
+    this.fileLockProvider = fileLockProvider;
     path = Path.of(System.getProperty("user.dir"), directory, "user.ser");
 
     Map<UUID, User> temp;
+    ReentrantLock lock = this.fileLockProvider.getLock(this.path);
 
+    lock.lock();
     try {
       Files.createDirectories(path.getParent());
-        if (Files.exists(path)) {
-            try (FileInputStream fis = new FileInputStream(path.toFile());
-                ObjectInputStream ois = new ObjectInputStream(fis)) {
-                temp = (Map<UUID, User>) ois.readObject();
-            }
-        } else {
-            temp = new HashMap<>();
+      if (Files.exists(path)) {
+        try (FileInputStream fis = new FileInputStream(path.toFile());
+            ObjectInputStream ois = new ObjectInputStream(fis)) {
+          temp = (Map<UUID, User>) ois.readObject();
         }
+      } else {
+        temp = new HashMap<>();
+      }
     } catch (IOException | ClassNotFoundException e) {
       e.printStackTrace();
       temp = new HashMap<>();
+    } finally {
+      lock.unlock();
     }
+
     this.data = temp;
   }
 
   private void saveMap(Map<UUID, User> map) {
+    ReentrantLock lock = this.fileLockProvider.getLock(this.path);
+    lock.lock();
+
     try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(path.toFile()))) {
       oos.writeObject(map);
     } catch (Exception e) {
       throw new IllegalStateException("user file save failed.", e);
+    } finally {
+      lock.unlock();
     }
   }
 

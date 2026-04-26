@@ -2,6 +2,7 @@ package com.sprint.mission.discodeit.repository.file;
 
 import com.sprint.mission.discodeit.entity.UserStatus;
 import com.sprint.mission.discodeit.repository.UserStatusRepository;
+import com.sprint.mission.discodeit.util.FileLockProvider;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -16,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.locks.ReentrantLock;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Repository;
@@ -24,16 +26,21 @@ import org.springframework.stereotype.Repository;
 @ConditionalOnProperty(name = "12-sprint-mission.repository.type", havingValue = "file")
 public class FileUserStatusRepository implements UserStatusRepository {
 
+  private final FileLockProvider fileLockProvider;
   private final Map<UUID, UserStatus> data;
   private final Path path;
 
   public FileUserStatusRepository(
+      FileLockProvider fileLockProvider,
       @Value("${12-sprint-mission.repository.file-directory:data}") String directory
   ) {
+    this.fileLockProvider = fileLockProvider;
     path = Path.of(System.getProperty("user.dir"), directory, "userstatus.ser");
 
     Map<UUID, UserStatus> temp;
+    ReentrantLock lock = this.fileLockProvider.getLock(this.path);
 
+    lock.lock();
     try {
       Files.createDirectories(path.getParent());
       if (Files.exists(path)) {
@@ -47,15 +54,23 @@ public class FileUserStatusRepository implements UserStatusRepository {
     } catch (IOException | ClassNotFoundException e) {
       e.printStackTrace();
       temp = new HashMap<>();
+    } finally {
+      lock.unlock();
     }
+
     this.data = temp;
   }
 
   private void saveMap(Map<UUID, UserStatus> map) {
+    ReentrantLock lock = this.fileLockProvider.getLock(this.path);
+    lock.lock();
+
     try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(path.toFile()))) {
       oos.writeObject(map);
     } catch (Exception e) {
       throw new IllegalStateException("userStatus file save failed.", e);
+    } finally {
+      lock.unlock();
     }
   }
 
