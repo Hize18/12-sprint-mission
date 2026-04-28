@@ -2,17 +2,20 @@ package com.sprint.mission.discodeit.controller.REST;
 
 import com.sprint.mission.discodeit.dto.binaryContent.BinaryContentCreateRequest;
 import com.sprint.mission.discodeit.dto.user.UserCreateRequest;
-import com.sprint.mission.discodeit.dto.user.UserResponse;
+import com.sprint.mission.discodeit.dto.user.UserDto;
 import com.sprint.mission.discodeit.dto.user.UserUpdateRequest;
-import com.sprint.mission.discodeit.dto.userStatus.UserStatusResponse;
+import com.sprint.mission.discodeit.dto.userStatus.UserStatusUpdateRequest;
+import com.sprint.mission.discodeit.entity.User;
+import com.sprint.mission.discodeit.entity.UserStatus;
 import com.sprint.mission.discodeit.service.UserService;
 import com.sprint.mission.discodeit.service.UserStatusService;
-import jakarta.servlet.http.HttpSession;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -22,108 +25,106 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+@Tag(name = "User", description = "User API")
 @RestController
-@RequestMapping("/api/user")
+@RequestMapping("/api/users")
 @RequiredArgsConstructor
 public class UserController {
 
   private final UserService userService;
   private final UserStatusService userStatusService;
 
-//    @RequestMapping(value = "/", method = RequestMethod.POST)
-//    public ResponseEntity<UserResponse> create(
-//            @RequestBody UserCreateRequest user
-//    ){
-//        return ResponseEntity.status(HttpStatus.CREATED).body(userService.create(user));
-//    }
+  @RequestMapping(
+      consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
+      method = RequestMethod.POST
+  )
+  public ResponseEntity<User> createWithImage(
+      @RequestPart("userCreateRequest") UserCreateRequest request,
+      @RequestPart(value = "profile", required = false) MultipartFile profile
+  ) {
+    BinaryContentCreateRequest profileImageRequest = toBinaryContentCreateRequest(profile);
 
-  @RequestMapping(value = "/", method = RequestMethod.POST)
-  public ResponseEntity<UserResponse> createWithImage(
-      @RequestPart("username") String username,
-      @RequestPart("email") String email,
-      @RequestPart("password") String password,
-      @RequestPart(value = "profileImage", required = false) MultipartFile profileImage
-  ) throws IOException {
-    BinaryContentCreateRequest profileImageRequest = null;
-
-    if (profileImage != null && !profileImage.isEmpty()) {
-      profileImageRequest = new BinaryContentCreateRequest(
-          profileImage.getOriginalFilename(),
-          profileImage.getContentType(),
-          profileImage.getBytes()
-      );
-    }
-
-    UserCreateRequest request = new UserCreateRequest(
-        username,
-        email,
-        password,
+    UserCreateRequest createRequest = new UserCreateRequest(
+        request.username(),
+        request.email(),
+        request.password(),
         profileImageRequest
     );
 
-    return ResponseEntity.status(HttpStatus.CREATED).body(userService.create(request));
+    return ResponseEntity.status(HttpStatus.CREATED).body(userService.create(createRequest));
   }
 
-
-  @RequestMapping(value = "/findAll", method = RequestMethod.GET)
-  public ResponseEntity<List<UserResponse>> findAll() {
-    return ResponseEntity.status(HttpStatus.OK).body(userService.findAll());
+  @RequestMapping(method = RequestMethod.GET)
+  public ResponseEntity<List<UserDto>> findAll() {
+    return ResponseEntity.ok(userService.findAll());
   }
 
-  @RequestMapping(value = "/{id}", method = RequestMethod.PUT)
-  public ResponseEntity<UserResponse> updateUser(
-      @PathVariable UUID id,
-      @RequestBody UserUpdateRequest userUpdateRequest,
-      HttpSession session
+  @RequestMapping(
+      value = "/{userId}",
+      consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
+      method = RequestMethod.PATCH
+  )
+  public ResponseEntity<User> updateUser(
+      @PathVariable UUID userId,
+      @RequestPart("userUpdateRequest") UserUpdateRequest request,
+      @RequestPart(value = "profile", required = false) MultipartFile profile
   ) {
-    UserResponse userResponse = (UserResponse) session.getAttribute("loginUser");
-    if (userResponse == null) {
-      throw new IllegalStateException("not login yet");
-    }
-    userService.update(userResponse.id(), id, userUpdateRequest);
-    return ResponseEntity.status(HttpStatus.OK).body(userService.findById(id));
+    BinaryContentCreateRequest profileImageRequest = toBinaryContentCreateRequest(
+        profile);
+
+    UserUpdateRequest updateRequest = new UserUpdateRequest(
+        request.newUsername(),
+        request.newEmail(),
+        request.newPassword(),
+        profileImageRequest
+    );
+
+    userService.update(userId, updateRequest);
+    return ResponseEntity.ok(userService.findById(userId));
   }
 
-  @RequestMapping(value = "/{id}", method = RequestMethod.DELETE)
-  public ResponseEntity<List<UserResponse>> deleteUser(
-      @PathVariable UUID id,
-      HttpSession session
-  ) {
-    UserResponse userResponse = (UserResponse) session.getAttribute("loginUser");
-    if (userResponse == null) {
-      throw new IllegalStateException("not login yet");
-    }
-    userService.delete(userResponse.id(), id);
-    return ResponseEntity.status(HttpStatus.OK).body(userService.findAll());
-  }
-
-  @RequestMapping(value = "/delete_Force/{id}", method = RequestMethod.DELETE)
-  public ResponseEntity<List<UserResponse>> deleteUserForce(
-      @PathVariable UUID id
-  ) {
-//        테스트 용
-    userService.delete(id, id);
-    return ResponseEntity.status(HttpStatus.OK).body(userService.findAll());
-  }
-
-  @RequestMapping(value = "/status/{userId}", method = RequestMethod.PUT)
-  public ResponseEntity<UserStatusResponse> userStatusUpdateByUserId(
+  @RequestMapping(value = "/{userId}", method = RequestMethod.DELETE)
+  public ResponseEntity<Void> deleteUser(
       @PathVariable UUID userId
   ) {
-    userStatusService.updateByUserId(userId);
-    return ResponseEntity.status(HttpStatus.OK).body(userStatusService.findByUserId(userId));
+    userService.delete(userId);
+    return ResponseEntity.noContent().build();
   }
-
-  @RequestMapping(value = "/status/{userId}", method = RequestMethod.GET)
-  public ResponseEntity<UserStatusResponse> checkUserStatus(
-      @PathVariable UUID userId
+  
+  @RequestMapping(value = "/{userId}/userStatus", method = RequestMethod.PATCH)
+  public ResponseEntity<UserStatus> userStatusUpdateByUserId(
+      @PathVariable UUID userId,
+      @RequestBody UserStatusUpdateRequest request
   ) {
-    return ResponseEntity.status(HttpStatus.OK).body(userStatusService.findByUserId(userId));
+    return ResponseEntity.ok(userStatusService.updateByUserId(userId, request));
   }
 
   @RequestMapping(value = "/status/findAll", method = RequestMethod.GET)
-  public ResponseEntity<List<UserStatusResponse>> findUserStatusAll() {
+  public ResponseEntity<List<UserStatus>> findUserStatusAll() {
     return ResponseEntity.status(HttpStatus.OK).body(userStatusService.findAll());
+  }
+
+  @RequestMapping(value = "/{userId}/userStatus", method = RequestMethod.GET)
+  public ResponseEntity<UserStatus> checkUserStatus(
+      @PathVariable UUID userId
+  ) {
+    return ResponseEntity.ok(userStatusService.findByUserId(userId));
+  }
+
+  private BinaryContentCreateRequest toBinaryContentCreateRequest(MultipartFile file) {
+    if (file == null || file.isEmpty()) {
+      return null;
+    }
+
+    try {
+      return new BinaryContentCreateRequest(
+          file.getOriginalFilename(),
+          file.getContentType(),
+          file.getBytes()
+      );
+    } catch (IOException e) {
+      throw new RuntimeException("file convert error", e);
+    }
   }
 }
 
