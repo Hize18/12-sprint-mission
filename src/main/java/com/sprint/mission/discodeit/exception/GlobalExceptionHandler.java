@@ -15,7 +15,7 @@ public class GlobalExceptionHandler {
     System.out.println("IllegalArgumentException : " + e.getMessage());
 
     return ResponseEntity
-        .badRequest()
+        .status(HttpStatus.BAD_REQUEST)
         .body(e.getMessage());
   }
 
@@ -24,7 +24,7 @@ public class GlobalExceptionHandler {
     System.out.println("IllegalStateException: " + e.getMessage()); // log
 
     return ResponseEntity
-        .status(HttpStatus.NOT_FOUND)
+        .status(HttpStatus.BAD_REQUEST)
         .body(e.getMessage());
   }
 
