@@ -14,20 +14,20 @@ public class Message implements Serializable {
   private static final long serialVersionUID = 1L;
   private final UUID id;
   private final UUID channelId;
-  private final UUID userId;
+  private final UUID authorId;
   private String content;
   private List<UUID> attachmentIds;
   private final Instant createdAt;
   private Instant updatedAt;
 
-  public Message(UUID channelId, UUID userId, String content, List<UUID> attachmentIds) {
-    if (channelId == null || userId == null || content == null || attachmentIds == null) {
+  public Message(UUID channelId, UUID authorId, String content, List<UUID> attachmentIds) {
+    if (channelId == null || authorId == null || content == null || attachmentIds == null) {
       throw new IllegalArgumentException("Message is null.");
     }
 
     this.id = UUID.randomUUID();
     this.channelId = channelId;
-    this.userId = userId;
+    this.authorId = authorId;
     this.attachmentIds = List.copyOf(attachmentIds);
     this.content = content;
     this.createdAt = Instant.now();
@@ -41,7 +41,7 @@ public class Message implements Serializable {
 
     this.id = message.getId();
     this.channelId = message.getChannelId();
-    this.userId = message.getUserId();
+    this.authorId = message.getAuthorId();
     this.attachmentIds = List.copyOf(message.getAttachmentIds());
     this.content = message.getContent();
     this.createdAt = message.getCreatedAt();

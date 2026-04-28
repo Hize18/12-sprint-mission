@@ -1,14 +1,14 @@
 package com.sprint.mission.discodeit.dto.userStatus;
 
-import java.util.UUID;
+import java.time.Instant;
 
 public record UserStatusUpdateRequest(
-    UUID id
+    Instant newLastActiveAt
 ) {
 
   public UserStatusUpdateRequest {
-    if (id == null) {
-      throw new IllegalArgumentException("id is null.");
+    if (newLastActiveAt == null) {
+      throw new IllegalArgumentException("newLastActiveAt is null.");
     }
   }
 }

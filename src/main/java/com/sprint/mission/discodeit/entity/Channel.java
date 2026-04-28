@@ -12,23 +12,23 @@ public class Channel implements Serializable {
   @Serial
   private static final long serialVersionUID = 1L;
   private final UUID id;
-  private ChannelType channelType;
-  private UUID ownerId;
+  private final ChannelType type;
   private String name;
+  private String description;
   private final Instant createdAt;
   private Instant updatedAt;
 
-  public Channel(UUID ownerId, String name, ChannelType channelType) {
-    if (ownerId == null) {
-      throw new IllegalArgumentException("ownerId is null.");
-    }
-    if (channelType == null) {
-      throw new IllegalArgumentException("channelType is null.");
+  public Channel(String name, String description, ChannelType type) {
+    if (type == null) {
+      throw new IllegalArgumentException("type is null.");
     }
 
-    if (channelType == ChannelType.PUBLIC) {
+    if (type == ChannelType.PUBLIC) {
       if (name == null) {
         throw new IllegalArgumentException("name is null.");
+      }
+      if (description == null) {
+        throw new IllegalArgumentException("description is null.");
       }
       if (name.isBlank()) {
         throw new IllegalArgumentException("name is blank.");
@@ -36,9 +36,9 @@ public class Channel implements Serializable {
     }
 
     this.id = UUID.randomUUID();
-    this.channelType = channelType;
-    this.ownerId = ownerId;
+    this.type = type;
     this.name = name;
+    this.description = description;
     this.createdAt = Instant.now();
     this.updatedAt = createdAt;
   }
@@ -49,9 +49,9 @@ public class Channel implements Serializable {
     }
 
     this.id = channel.getId();
-    this.channelType = channel.getChannelType();
-    this.ownerId = channel.getOwnerId();
+    this.type = channel.getType();
     this.name = channel.getName();
+    this.description = channel.getDescription();
     this.createdAt = channel.getCreatedAt();
     this.updatedAt = channel.getUpdatedAt();
   }
@@ -60,15 +60,19 @@ public class Channel implements Serializable {
     return new Channel(channel);
   }
 
-  public void update(String name) {
+  public void update(String name, String description) {
     if (name == null) {
       throw new IllegalArgumentException("name is null.");
+    }
+    if (description == null) {
+      throw new IllegalArgumentException("description is null.");
     }
     if (name.isBlank()) {
       throw new IllegalArgumentException("name is blank.");
     }
 
     this.name = name;
+    this.description = description;
     this.updatedAt = Instant.now();
   }
 }

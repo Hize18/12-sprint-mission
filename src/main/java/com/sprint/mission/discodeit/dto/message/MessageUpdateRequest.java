@@ -4,16 +4,16 @@ import com.sprint.mission.discodeit.dto.binaryContent.BinaryContentCreateRequest
 import java.util.List;
 
 public record MessageUpdateRequest(
-    String content,
+    String newContent,
     List<BinaryContentCreateRequest> attachmentList
 ) {
 
   public MessageUpdateRequest {
-    if (content == null) {
-      throw new IllegalArgumentException("content is null.");
+    if (newContent == null) {
+      throw new IllegalArgumentException("newContent is null.");
     }
-    if (content.isBlank()) {
-      throw new IllegalArgumentException("content is blank.");
+    if (newContent.isBlank()) {
+      throw new IllegalArgumentException("newContent is blank.");
     }
 
     attachmentList = attachmentList == null ? List.of() : List.copyOf(attachmentList);

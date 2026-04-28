@@ -6,7 +6,7 @@ import java.util.UUID;
 
 public record MessageCreateRequest(
     UUID channelId,
-    UUID userId,
+    UUID authorId,
     String content,
     List<BinaryContentCreateRequest> attachmentList
 ) {
@@ -15,8 +15,8 @@ public record MessageCreateRequest(
     if (channelId == null) {
       throw new IllegalArgumentException("channelId is null.");
     }
-    if (userId == null) {
-      throw new IllegalArgumentException("userId is null.");
+    if (authorId == null) {
+      throw new IllegalArgumentException("authorId is null.");
     }
 
     if (content == null) {

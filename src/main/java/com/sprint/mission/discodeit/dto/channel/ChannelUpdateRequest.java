@@ -1,15 +1,16 @@
 package com.sprint.mission.discodeit.dto.channel;
 
 public record ChannelUpdateRequest(
-    String name
+    String newName,
+    String newDescription
 ) {
 
   public ChannelUpdateRequest {
-    if (name == null) {
-      throw new IllegalArgumentException("name is null");
+    if (newName == null) {
+      throw new IllegalArgumentException("newName is null");
     }
 
-    if (name.isBlank()) {
+    if (newName.isBlank()) {
       throw new IllegalArgumentException("name is blank.");
     }
   }

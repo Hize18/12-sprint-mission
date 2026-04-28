@@ -3,21 +3,19 @@ package com.sprint.mission.discodeit.dto.channel;
 import com.sprint.mission.discodeit.entity.Channel;
 import com.sprint.mission.discodeit.entity.ChannelType;
 import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 
-public record ChannelResponse(
+public record ChannelDto(
     UUID id,
     ChannelType type,
-    UUID ownerId,
     String name,
+    String description,
     Instant lastMessageAt,      // 추가
     List<UUID> participantIds
 ) {
 
-  public static ChannelResponse from(Channel channel) {
+  public static ChannelDto from(Channel channel) {
     if (channel == null) {
       throw new IllegalArgumentException("Channel is null");
     }
@@ -25,32 +23,19 @@ public record ChannelResponse(
     return from(channel, null, null);
   }
 
-  public static ChannelResponse from(Channel channel, Instant lastMessageAt,
+  public static ChannelDto from(Channel channel, Instant lastMessageAt,
       List<UUID> participantIds) {
     if (channel == null) {
       throw new IllegalArgumentException("Channel is null");
     }
 
-    return new ChannelResponse(
+    return new ChannelDto(
         channel.getId(),
-        channel.getChannelType(),
-        channel.getOwnerId(),
+        channel.getType(),
         channel.getName(),
+        "NEED_TO_IMPLEMENT_DESCRIPTION_PART",
         lastMessageAt,
         participantIds
     );
-  }
-
-  public static final DateTimeFormatter FORMATTER =
-      DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
-          .withZone(ZoneId.systemDefault());
-
-  @Override
-  public String toString() {
-    return "Channel [" +
-        "ownerId = " + ownerId +
-        ", name = " + name +
-        "]\t시간 = " +
-        FORMATTER.format(lastMessageAt);
   }
 }
