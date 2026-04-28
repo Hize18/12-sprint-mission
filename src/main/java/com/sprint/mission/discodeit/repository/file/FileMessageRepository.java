@@ -108,7 +108,7 @@ public class FileMessageRepository implements MessageRepository {
     List<Message> list = new ArrayList<>();
 
     for (Message value : data.values()) {
-      if (Objects.equals(value.getUserId(), userId)) {
+      if (Objects.equals(value.getAuthorId(), userId)) {
         list.add(value);
       }
     }

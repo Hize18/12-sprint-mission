@@ -1,7 +1,6 @@
 package com.sprint.mission.discodeit.service.basic;
 
 import com.sprint.mission.discodeit.dto.binaryContent.BinaryContentCreateRequest;
-import com.sprint.mission.discodeit.dto.binaryContent.BinaryContentResponse;
 import com.sprint.mission.discodeit.entity.BinaryContent;
 import com.sprint.mission.discodeit.repository.BinaryContentRepository;
 import com.sprint.mission.discodeit.service.BinaryContentService;
@@ -19,53 +18,48 @@ public class BasicBinaryContentService implements BinaryContentService {
   private final BinaryContentRepository binaryContentRepository;
 
   @Override
-  public BinaryContentResponse create(BinaryContentCreateRequest request) {
+  public BinaryContent create(BinaryContentCreateRequest request) {
     if (request == null) {
       throw new IllegalArgumentException("request is null.");
     }
 
-    BinaryContent bc = new BinaryContent(request.fileName(), request.contentType(),
+    BinaryContent binaryContent = new BinaryContent(request.fileName(), request.contentType(),
         request.bytes());
-    binaryContentRepository.save(bc);
-
-    return BinaryContentResponse.from(bc);
+    return binaryContentRepository.save(binaryContent);
   }
 
   @Override
-  public BinaryContentResponse findById(UUID id) {
-    if (id == null) {
-      throw new IllegalArgumentException("id is null.");
+  public BinaryContent findById(UUID binaryContentId) {
+    if (binaryContentId == null) {
+      throw new IllegalArgumentException("binaryContentId is null.");
     }
 
-    return BinaryContentResponse.from(
-        binaryContentRepository.findById(id)
-            .orElseThrow(() -> new NoSuchElementException("binaryContent not found"))
-    );
+    return binaryContentRepository.findById(binaryContentId)
+        .orElseThrow(() -> new NoSuchElementException("binaryContent not found"));
   }
 
   @Override
-  public List<BinaryContentResponse> findAllByIdIn(List<UUID> idList) {
-    if (idList == null) {
-      throw new IllegalArgumentException("idList is null.");
+  public List<BinaryContent> findAllByIdIn(List<UUID> binaryContentIds) {
+    if (binaryContentIds == null) {
+      throw new IllegalArgumentException("binaryContentIds is null.");
     }
 
-    return idList.stream()
+    return binaryContentIds.stream()
         .filter(Objects::nonNull)
         .map(id -> binaryContentRepository.findById(id)
             .orElseThrow(() -> new NoSuchElementException("not found: " + id)))
-        .map(BinaryContentResponse::from)
         .toList();
   }
 
   @Override
-  public void delete(UUID id) {
-    if (id == null) {
+  public void delete(UUID binaryContentId) {
+    if (binaryContentId == null) {
       throw new IllegalArgumentException("id is null.");
     }
 
-    if (!binaryContentRepository.existsById(id)) {
+    if (!binaryContentRepository.existsById(binaryContentId)) {
       throw new NoSuchElementException("binaryContent not found");
     }
-    binaryContentRepository.delete(id);
+    binaryContentRepository.delete(binaryContentId);
   }
 }

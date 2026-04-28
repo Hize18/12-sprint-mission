@@ -1,7 +1,6 @@
 package com.sprint.mission.discodeit.service.basic;
 
-import com.sprint.mission.discodeit.dto.channel.ChannelCreateRequest;
-import com.sprint.mission.discodeit.dto.channel.ChannelResponse;
+import com.sprint.mission.discodeit.dto.channel.ChannelDto;
 import com.sprint.mission.discodeit.dto.channel.ChannelUpdateRequest;
 import com.sprint.mission.discodeit.dto.channel.PrivateChannelCreateRequest;
 import com.sprint.mission.discodeit.dto.channel.PublicChannelCreateRequest;
@@ -33,22 +32,23 @@ public class BasicChannelService implements ChannelService {
   private final ReadStatusRepository readStatusRepository;
 
   @Override
-  public ChannelResponse createPublicChannel(PublicChannelCreateRequest request) {
+  public Channel create(PublicChannelCreateRequest request) {
     if (request == null) {
       throw new IllegalArgumentException("request is null.");
     }
 
-    return create(new ChannelCreateRequest(ChannelType.PUBLIC, request.ownerId(), request.name()));
+    if (!isUniqueName(request.name())) {
+      throw new IllegalStateException("name is duplicate.");
+    }
+
+    Channel channel = new Channel(request.name(), request.description(), ChannelType.PUBLIC);
+    return channelRepository.save(channel);
   }
 
   @Override
-  public ChannelResponse createPrivateChannel(PrivateChannelCreateRequest request) {
+  public Channel create(PrivateChannelCreateRequest request) {
     if (request == null) {
       throw new IllegalArgumentException("request is null.");
-    }
-
-    if (!userRepository.existsById(request.ownerId())) {
-      throw new NoSuchElementException("owner not found.");
     }
 
     for (UUID uuid : request.participantIds()) {
@@ -57,95 +57,53 @@ public class BasicChannelService implements ChannelService {
       }
     }
 
-    ChannelResponse response = create(new ChannelCreateRequest(
-        ChannelType.PRIVATE,
-        request.ownerId(),
-        null
-    ));
+    Channel channel = new Channel(null, null, ChannelType.PRIVATE);
 
-    readStatusRepository.save(new ReadStatus(request.ownerId(), response.id()));
     for (UUID uuid : request.participantIds()) {
-      if (readStatusRepository.findByUserIdAndChannelId(uuid, response.id()).isEmpty()) {
-        readStatusRepository.save(new ReadStatus(uuid, response.id()));
+      if (readStatusRepository.findByUserIdAndChannelId(uuid, channel.getId()).isEmpty()) {
+        readStatusRepository.save(new ReadStatus(uuid, channel.getId(), Instant.now()));
       }
     }
-    return response;
-  }
-
-  private ChannelResponse create(ChannelCreateRequest request) {
-    if (request == null) {
-      throw new IllegalArgumentException("channelCreateRequest is null.");
-    }
-
-    if (!userRepository.existsById(request.ownerId())) {
-      throw new NoSuchElementException("owner not found.");
-    }
-
-    if (request.channelType() == ChannelType.PUBLIC) {
-      if (!isUniqueName(request.name())) {
-        throw new IllegalStateException("name is duplicate.");
-      }
-    }
-
-    Channel channel = new Channel(
-        request.ownerId(),
-        request.name(),
-        request.channelType()
-    );
-    channelRepository.save(channel);
-
-    return ChannelResponse.from(channel);
+    return channelRepository.save(channel);
   }
 
   @Override
-  public ChannelResponse findById(UUID id) {
-    if (id == null) {
-      throw new IllegalArgumentException("id is null.");
+  public ChannelDto findById(UUID channelId) {
+    if (channelId == null) {
+      throw new IllegalArgumentException("channelId is null.");
     }
 
-    Channel channel = channelRepository.findById(id)
+    Channel channel = channelRepository.findById(channelId)
         .orElseThrow(() -> new NoSuchElementException("channel not found."));
 
     return toChannelResponse(channel);
   }
 
-  private Channel findEntityById(UUID id) {
-    if (id == null) {
-      throw new IllegalArgumentException("id is null.");
+  private Channel findEntityById(UUID channelId) {
+    if (channelId == null) {
+      throw new IllegalArgumentException("channelId is null.");
     }
 
-    return channelRepository.findById(id)
+    return channelRepository.findById(channelId)
         .orElseThrow(() -> new NoSuchElementException("channel not found."));
   }
 
   @Override
-  public ChannelResponse findByName(String name) {
-    if (name == null) {
-      throw new IllegalArgumentException("name is null.");
-    }
-
-    Channel channel = channelRepository.findByName(name)
-        .orElseThrow(() -> new NoSuchElementException("channel not found."));
-
-    return toChannelResponse(channel);
-  }
-
-  @Override
-  public List<ChannelResponse> findAll() {
+  public List<ChannelDto> findAll() {
     return channelRepository.findAll().stream()
-        .filter(channel -> channel.getChannelType() == ChannelType.PUBLIC)
+        .filter(channel -> channel.getType() == ChannelType.PUBLIC)
         .map(this::toChannelResponse)
         .toList();
   }
 
   @Override
-  public List<ChannelResponse> findAllByUserId(UUID userId) {
+  public List<ChannelDto> findAllByUserId(UUID userId) {
     if (userId == null) {
       throw new IllegalArgumentException("userId is null.");
     }
 
     List<Channel> publicChannels = channelRepository.findAll().stream()
-        .filter(c -> c.getChannelType() == ChannelType.PUBLIC)
+        .filter(c -> c.getType() == ChannelType.PUBLIC)
         .toList();
 
     List<Channel> privateChannels = readStatusRepository.findByUserId(userId).stream()
@@ -162,10 +120,7 @@ public class BasicChannelService implements ChannelService {
   }
 
   @Override
-  public ChannelResponse update(UUID userId, UUID channelId, ChannelUpdateRequest request) {
-    if (userId == null) {
-      throw new IllegalArgumentException("userId is null.");
-    }
+  public Channel update(UUID channelId, ChannelUpdateRequest request) {
     if (channelId == null) {
       throw new IllegalArgumentException("channelId is null.");
     }
@@ -175,43 +130,31 @@ public class BasicChannelService implements ChannelService {
 
     Channel channel = findEntityById(channelId);
 
-    if (!Objects.equals(channel.getOwnerId(), userId)) {
-      throw new IllegalStateException("no permission");
-    }
-    if (channel.getChannelType() == ChannelType.PRIVATE) {
+    if (channel.getType() == ChannelType.PRIVATE) {
       throw new IllegalStateException("private channel cannot be updated.");
     }
 
-    if (Objects.equals(channel.getName(), request.name())) {
+    if (Objects.equals(channel.getName(), request.newName())) {
       throw new IllegalStateException("name is same.");
     }
 
-    if (!isUniqueName(request.name())) {
+    if (!isUniqueName(request.newName())) {
       throw new IllegalStateException("name is duplicate.");
     }
 
     Channel tempChannel = Channel.copyOf(channel);
-    tempChannel.update(request.name());
+    tempChannel.update(request.newName(), request.newDescription());
 
-    return toChannelResponse(
-        channelRepository.save(tempChannel)
-    );
+    return channelRepository.save(tempChannel);
   }
 
   @Override
-  public void delete(UUID userId, UUID channelId) {
-    if (userId == null) {
-      throw new IllegalArgumentException("userId is null.");
-    }
+  public void delete(UUID channelId) {
     if (channelId == null) {
       throw new IllegalArgumentException("channelId is null.");
     }
 
     Channel channel = findEntityById(channelId);
-
-    if (!Objects.equals(channel.getOwnerId(), userId)) {
-      throw new IllegalStateException("no permission");
-    }
 
     messageRepository.findByChannelId(channelId).forEach(c -> messageRepository.delete(c.getId()));
     readStatusRepository.findByChannelId(channelId)
@@ -228,7 +171,7 @@ public class BasicChannelService implements ChannelService {
         .noneMatch(channel -> Objects.equals(channel.getName(), name));
   }
 
-  private ChannelResponse toChannelResponse(Channel channel) {
+  private ChannelDto toChannelResponse(Channel channel) {
     List<Message> messageList = messageRepository.findByChannelId(channel.getId());
 
     Instant lastMessageAt = messageList.isEmpty()
@@ -236,12 +179,12 @@ public class BasicChannelService implements ChannelService {
         : messageList.get(messageList.size() - 1).getUpdatedAt();
 
     List<UUID> userIdList = null;
-    if (channel.getChannelType() == ChannelType.PRIVATE) {
+    if (channel.getType() == ChannelType.PRIVATE) {
       userIdList = readStatusRepository.findByChannelId(channel.getId()).stream()
           .map(ReadStatus::getUserId)
           .toList();
     }
 
-    return ChannelResponse.from(channel, lastMessageAt, userIdList);
+    return ChannelDto.from(channel, lastMessageAt, userIdList);
   }
 }

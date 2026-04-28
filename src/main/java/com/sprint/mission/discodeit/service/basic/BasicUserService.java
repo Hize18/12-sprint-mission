@@ -2,7 +2,7 @@ package com.sprint.mission.discodeit.service.basic;
 
 import com.sprint.mission.discodeit.dto.binaryContent.BinaryContentCreateRequest;
 import com.sprint.mission.discodeit.dto.user.UserCreateRequest;
-import com.sprint.mission.discodeit.dto.user.UserResponse;
+import com.sprint.mission.discodeit.dto.user.UserDto;
 import com.sprint.mission.discodeit.dto.user.UserUpdateRequest;
 import com.sprint.mission.discodeit.entity.BinaryContent;
 import com.sprint.mission.discodeit.entity.User;
@@ -11,6 +11,7 @@ import com.sprint.mission.discodeit.repository.BinaryContentRepository;
 import com.sprint.mission.discodeit.repository.UserRepository;
 import com.sprint.mission.discodeit.repository.UserStatusRepository;
 import com.sprint.mission.discodeit.service.UserService;
+import java.time.Instant;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -27,7 +28,7 @@ public class BasicUserService implements UserService {
   private final UserStatusRepository userStatusRepository;
 
   @Override
-  public UserResponse create(UserCreateRequest request) {
+  public User create(UserCreateRequest request) {
     validateCreateUser(request);
 
     UUID profileImageId = checkProfileImageId(request.profileImage());
@@ -40,20 +41,19 @@ public class BasicUserService implements UserService {
     );
     userRepository.save(user);
 
-    UserStatus userStatus = new UserStatus(user.getId());
+    UserStatus userStatus = new UserStatus(user.getId(), Instant.now());
     userStatusRepository.save(userStatus);
 
-    return toResponse(user);
+    return user;
   }
 
   @Override
-  public UserResponse findById(UUID id) {
-    if (id == null) {
+  public User findById(UUID userId) {
+    if (userId == null) {
       throw new IllegalArgumentException("id is null.");
     }
 
-    return userRepository.findById(id)
-        .map(this::toResponse)
+    return userRepository.findById(userId)
         .orElseThrow(() -> new NoSuchElementException("user not found."));
   }
 
@@ -67,40 +67,22 @@ public class BasicUserService implements UserService {
   }
 
   @Override
-  public UserResponse findByUsername(String username) {
-    if (username == null) {
-      throw new IllegalArgumentException("username is null.");
-    }
-
-    return userRepository.findByUsername(username)
-        .map(this::toResponse)
-        .orElseThrow(() -> new NoSuchElementException("user not found."));
-  }
-
-  @Override
-  public List<UserResponse> findAll() {
+  public List<UserDto> findAll() {
     return userRepository.findAll().stream()
         .map(this::toResponse)
         .toList();
   }
 
   @Override
-  public UserResponse update(UUID srcUserId, UUID dstUserId, UserUpdateRequest request) {
-    if (srcUserId == null) {
-      throw new IllegalArgumentException("srcUserId is null.");
-    }
-    if (dstUserId == null) {
-      throw new IllegalArgumentException("dstUserId is null.");
+  public User update(UUID userId, UserUpdateRequest request) {
+    if (userId == null) {
+      throw new IllegalArgumentException("userId is null.");
     }
     if (request == null) {
       throw new IllegalArgumentException("userUpdateRequest is null.");
     }
 
-    if (!Objects.equals(srcUserId, dstUserId)) {
-      throw new IllegalStateException("no permission");
-    }
-
-    User targetUser = findEntityById(dstUserId);
+    User targetUser = findEntityById(userId);
 
     User tempUser = User.copyOf(targetUser);
 
@@ -109,18 +91,18 @@ public class BasicUserService implements UserService {
     String password = targetUser.getPassword();
     UUID profileImageId = targetUser.getProfileId();
 
-    if (request.username() != null) {
-      validateDuplicateUsername(request.username(), targetUser.getUsername());
-      username = request.username();
+    if (request.newUsername() != null) {
+      validateDuplicateUsername(request.newUsername(), targetUser.getUsername());
+      username = request.newUsername();
     }
 
-    if (request.email() != null) {
-      validateDuplicateEmail(request.email(), targetUser.getEmail());
-      email = request.email();
+    if (request.newEmail() != null) {
+      validateDuplicateEmail(request.newEmail(), targetUser.getEmail());
+      email = request.newEmail();
     }
 
-    if (request.password() != null) {
-      password = request.password();
+    if (request.newPassword() != null) {
+      password = request.newPassword();
     }
 
     if (request.profileImage() != null) {
@@ -134,23 +116,16 @@ public class BasicUserService implements UserService {
     }
 
     tempUser.update(username, email, password, profileImageId);
-    return toResponse(userRepository.save(tempUser));
+    return userRepository.save(tempUser);
   }
 
   @Override
-  public void delete(UUID srcUserId, UUID dstUserId) {
-    if (srcUserId == null) {
-      throw new IllegalArgumentException("srcUserId is null.");
-    }
-    if (dstUserId == null) {
-      throw new IllegalArgumentException("dstUserId is null.");
+  public void delete(UUID userId) {
+    if (userId == null) {
+      throw new IllegalArgumentException("userId is null.");
     }
 
-    if (!Objects.equals(srcUserId, dstUserId)) {
-      throw new IllegalStateException("no permission");
-    }
-
-    User targetUser = findEntityById(dstUserId);
+    User targetUser = findEntityById(userId);
 
     UserStatus userStatus = userStatusRepository.findByUserId(targetUser.getId())
         .orElseThrow(() -> new NoSuchElementException("userStatus not found."));
@@ -160,7 +135,7 @@ public class BasicUserService implements UserService {
       binaryContentRepository.delete(profileImageId);
     }
 
-    userRepository.delete(dstUserId);
+    userRepository.delete(userId);
     userStatusRepository.delete(userStatus.getId());
   }
 
@@ -197,12 +172,12 @@ public class BasicUserService implements UserService {
     return profileImageId;
   }
 
-  private UserResponse toResponse(User user) {
+  private UserDto toResponse(User user) {
     boolean online = userStatusRepository.findByUserId(user.getId())
         .map(UserStatus::isActive)
         .orElseThrow(() -> new NoSuchElementException("userStatus not found."));
 
-    return UserResponse.from(user, online);
+    return UserDto.from(user, online);
   }
 
   private void validateCreateUser(UserCreateRequest request) {

@@ -10,11 +10,7 @@ public interface ChannelRepository {
   Channel save(Channel channel);
 
   Optional<Channel> findById(UUID id);
-
-  Optional<Channel> findByName(String name);
-
-  List<Channel> findByOwnerId(UUID ownerId);
-
+  
   List<Channel> findAll();
 
   boolean existsById(UUID id);
