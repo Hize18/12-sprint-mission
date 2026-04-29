@@ -14,7 +14,6 @@ import com.sprint.mission.discodeit.repository.ReadStatusRepository;
 import com.sprint.mission.discodeit.repository.UserRepository;
 import com.sprint.mission.discodeit.service.ChannelService;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -102,19 +101,15 @@ public class BasicChannelService implements ChannelService {
       throw new IllegalArgumentException("userId is null.");
     }
 
-    List<Channel> publicChannels = channelRepository.findAll().stream()
-        .filter(c -> c.getType() == ChannelType.PUBLIC)
-        .toList();
-
-    List<Channel> privateChannels = readStatusRepository.findByUserId(userId).stream()
+    List<UUID> mySubscribedChannelIds = readStatusRepository.findByUserId(userId).stream()
         .map(ReadStatus::getChannelId)
-        .map(this::findEntityById)
         .toList();
 
-    List<Channel> resultList = new ArrayList<>(publicChannels);
-    resultList.addAll(privateChannels);
-
-    return resultList.stream()
+    return channelRepository.findAll().stream()
+        .filter(channel ->
+            channel.getType().equals(ChannelType.PUBLIC)
+                || mySubscribedChannelIds.contains(channel.getId())
+        )
         .map(this::toChannelResponse)
         .toList();
   }
