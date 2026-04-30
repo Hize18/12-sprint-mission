@@ -7,7 +7,7 @@ import java.util.UUID;
 public record UserStatusResponse(
         UUID id,
         UUID userId,
-        boolean isActive
+        boolean online
 ) {
     public static UserStatusResponse from(UserStatus usrStatus) {
         if (usrStatus == null) throw new IllegalArgumentException("userStatus is null.");
@@ -23,7 +23,7 @@ public record UserStatusResponse(
     public String toString() {
         return "UserStatus [" +
                 "userId = " + userId +
-                ", isActive = " + isActive +
+                ", online = " + online +
                 "]";
     }
 }

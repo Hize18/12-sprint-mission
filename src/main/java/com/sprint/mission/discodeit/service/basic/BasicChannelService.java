@@ -19,18 +19,10 @@ import java.util.*;
 @Service
 @RequiredArgsConstructor
 public class BasicChannelService implements ChannelService {
-    private final ChannelRepository cr;
-    private final UserRepository ur;
-    private final MessageRepository mr;
-    private final ReadStatusRepository rsr;
-
-    @Override
-    public boolean isUniqueName(String name) {
-        if (name == null) throw new IllegalArgumentException("name is null.");
-
-        return cr.findAll().stream()
-                .noneMatch(channel -> Objects.equals(channel.getName(), name));
-    }
+    private final ChannelRepository channelRepository;
+    private final UserRepository userRepository;
+    private final MessageRepository messageRepository;
+    private final ReadStatusRepository readStatusRepository;
 
     @Override
     public ChannelResponse createPublicChannel(PublicChannelCreateRequest request) {
@@ -43,12 +35,10 @@ public class BasicChannelService implements ChannelService {
     public ChannelResponse createPrivateChannel(PrivateChannelCreateRequest request) {
         if (request == null) throw new IllegalArgumentException("request is null.");
 
-        ur.findById(request.ownerId())
-                .orElseThrow(() -> new NoSuchElementException("owner not found."));
+        if(!userRepository.existsById(request.ownerId())) throw new NoSuchElementException("owner not found.");
 
         for (UUID uuid : request.participantIds()) {
-            ur.findById(uuid)
-                    .orElseThrow(() -> new NoSuchElementException("user not found."));
+            if (!userRepository.existsById(uuid)) throw new NoSuchElementException("user not found.");
         }
 
         ChannelResponse response = create(new ChannelCreateRequest(
@@ -57,10 +47,10 @@ public class BasicChannelService implements ChannelService {
                 null
         ));
 
-        rsr.save(new ReadStatus(request.ownerId(), response.id()));
+        readStatusRepository.save(new ReadStatus(request.ownerId(), response.id()));
         for (UUID uuid : request.participantIds()) {
-            if (rsr.findByUserIdAndChannelId(uuid, response.id()).isEmpty()) {
-                rsr.save(new ReadStatus(uuid, response.id()));
+            if (readStatusRepository.findByUserIdAndChannelId(uuid, response.id()).isEmpty()) {
+                readStatusRepository.save(new ReadStatus(uuid, response.id()));
             }
         }
         return response;
@@ -69,8 +59,8 @@ public class BasicChannelService implements ChannelService {
     private ChannelResponse create(ChannelCreateRequest request) {
         if (request == null) throw new IllegalArgumentException("channelCreateRequest is null.");
 
-        ur.findById(request.ownerId())
-                .orElseThrow(() -> new NoSuchElementException("owner not found."));
+        if(!userRepository.existsById(request.ownerId())) throw new NoSuchElementException("owner not found.");
+
 
         if (request.channelType() == ChannelType.PUBLIC) {
             if (!isUniqueName(request.name())) {
@@ -83,7 +73,7 @@ public class BasicChannelService implements ChannelService {
                 request.name(),
                 request.channelType()
         );
-        cr.save(channel);
+        channelRepository.save(channel);
 
         return ChannelResponse.from(channel);
     }
@@ -92,7 +82,7 @@ public class BasicChannelService implements ChannelService {
     public ChannelResponse findById(UUID id) {
         if (id == null) throw new IllegalArgumentException("id is null.");
 
-        Channel channel = cr.findById(id)
+        Channel channel = channelRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("channel not found."));
 
         return toChannelResponse(channel);
@@ -101,7 +91,7 @@ public class BasicChannelService implements ChannelService {
     private Channel findEntityById(UUID id) {
         if (id == null) throw new IllegalArgumentException("id is null.");
 
-        return cr.findById(id)
+        return channelRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("channel not found."));
     }
 
@@ -109,7 +99,7 @@ public class BasicChannelService implements ChannelService {
     public ChannelResponse findByName(String name) {
         if (name == null) throw new IllegalArgumentException("name is null.");
 
-        Channel channel = cr.findByName(name)
+        Channel channel = channelRepository.findByName(name)
                 .orElseThrow(() -> new NoSuchElementException("channel not found."));
 
         return toChannelResponse(channel);
@@ -117,7 +107,7 @@ public class BasicChannelService implements ChannelService {
 
     @Override
     public List<ChannelResponse> findAll() {
-        return cr.findAll().stream()
+        return channelRepository.findAll().stream()
                 .filter(channel -> channel.getChannelType() == ChannelType.PUBLIC)
                 .map(this::toChannelResponse)
                 .toList();
@@ -127,11 +117,11 @@ public class BasicChannelService implements ChannelService {
     public List<ChannelResponse> findAllByUserId(UUID userId) {
         if (userId == null) throw new IllegalArgumentException("userId is null.");
 
-        List<Channel> publicChannels = cr.findAll().stream()
+        List<Channel> publicChannels = channelRepository.findAll().stream()
                 .filter(c -> c.getChannelType() == ChannelType.PUBLIC)
                 .toList();
 
-        List<Channel> privateChannels = rsr.findByUserId(userId).stream()
+        List<Channel> privateChannels = readStatusRepository.findByUserId(userId).stream()
                 .map(ReadStatus::getChannelId)
                 .map(this::findEntityById)
                 .toList();
@@ -145,13 +135,14 @@ public class BasicChannelService implements ChannelService {
     }
 
     @Override
-    public boolean update(UUID userId, ChannelUpdateRequest request) {
+    public void update(UUID userId, UUID channelId, ChannelUpdateRequest request) {
         if (userId == null) throw new IllegalArgumentException("userId is null.");
+        if (channelId == null) throw new IllegalArgumentException("channelId is null.");
         if (request == null) throw new IllegalArgumentException("channelUpdateRequest is null.");
 
-        Channel channel = findEntityById(request.channelId());
+        Channel channel = findEntityById(channelId);
 
-        if (!Objects.equals(channel.getOwnerId(), userId)) return false;
+        if (!Objects.equals(channel.getOwnerId(), userId)) throw new IllegalStateException("no permission");
         if (channel.getChannelType() == ChannelType.PRIVATE) {
             throw new IllegalStateException("private channel cannot be updated.");
         }
@@ -166,27 +157,32 @@ public class BasicChannelService implements ChannelService {
 
         Channel tempChannel = Channel.copyOf(channel);
         tempChannel.update(request.name());
-        cr.save(tempChannel);
-        return true;
+        channelRepository.save(tempChannel);
     }
 
     @Override
-    public boolean delete(UUID userId, UUID channelId) {
+    public void delete(UUID userId, UUID channelId) {
         if (userId == null) throw new IllegalArgumentException("userId is null.");
         if (channelId == null) throw new IllegalArgumentException("channelId is null.");
 
         Channel channel = findEntityById(channelId);
 
-        if (!Objects.equals(channel.getOwnerId(), userId)) return false;
+        if (!Objects.equals(channel.getOwnerId(), userId)) throw new IllegalStateException("no permission");
 
-        mr.findByChannelId(channelId).forEach(c -> mr.delete(c.getId()));
-        rsr.findByChannelId(channelId).forEach(r -> rsr.delete(r.getId()));
-        cr.delete(channelId);
-        return true;
+        messageRepository.findByChannelId(channelId).forEach(c -> messageRepository.delete(c.getId()));
+        readStatusRepository.findByChannelId(channelId).forEach(r -> readStatusRepository.delete(r.getId()));
+        channelRepository.delete(channelId);
+    }
+
+    private boolean isUniqueName(String name) {
+        if (name == null) throw new IllegalArgumentException("name is null.");
+
+        return channelRepository.findAll().stream()
+                .noneMatch(channel -> Objects.equals(channel.getName(), name));
     }
 
     private ChannelResponse toChannelResponse(Channel channel) {
-        List<Message> messageList = mr.findByChannelId(channel.getId());
+        List<Message> messageList = messageRepository.findByChannelId(channel.getId());
 
         Instant lastMessageAt = messageList.isEmpty()
                 ? null
@@ -194,7 +190,7 @@ public class BasicChannelService implements ChannelService {
 
         List<UUID> userIdList = null;
         if (channel.getChannelType() == ChannelType.PRIVATE) {
-            userIdList = rsr.findByChannelId(channel.getId()).stream()
+            userIdList = readStatusRepository.findByChannelId(channel.getId()).stream()
                     .map(ReadStatus::getUserId)
                     .toList();
         }

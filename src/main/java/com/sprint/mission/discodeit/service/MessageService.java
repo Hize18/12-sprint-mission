@@ -18,7 +18,7 @@ public interface MessageService {
 
     List<MessageResponse> findAll();
 
-    boolean update(UUID userId, MessageUpdateRequest request);
+    void update(UUID userId, UUID messageId, MessageUpdateRequest request);
 
-    boolean delete(UUID userId, UUID messageId);
+    void delete(UUID userId, UUID messageId);
 }

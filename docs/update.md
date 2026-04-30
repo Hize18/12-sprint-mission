@@ -1,3 +1,6 @@
+<details>
+<summary style="font-size: 20px; font-weight: bold;">Sprint 3</summary>
+
 ### Sprint 3
 - Sprint 2에서 스프링 프로젝트로 변경.
 - docs를 현재 프로젝트 기준으로 최신화.
@@ -35,3 +38,34 @@
 - 프로젝트 마이그레이션을 하면서 리펙토링 및 가독성 확보
 - 실행파일에 Spring context를 이용하여 service DI시행.
 - String.equals를 Objects.equals로 null-safe 추가.
+</details>
+
+<details>
+<summary style="font-size: 20px; font-weight: bold;">Sprint 4</summary>
+
+### Sprint 4
+- sprint 4의 요구 사항인 엔드포인트 구현.
+- 멘토님의 리뷰를 참고하여 기존 코드 수정
+  - RequestMapping을 이용하여 get과 post, put, delete 엔드포인트 구현
+  - postman으로 요청값을 받기 위해 restController로 구현.
+  - 첨부파일을 받는 경우를 위해 MultipartFile를 사용.(create만 사용.)
+  - 전역 예외 처리를 위해 globalException 구현
+---
+- 수정 사항
+  - DTO
+    - 일관성을 위해 네이밍 수정
+    - 심화 요구사항을 실행하기 위해 필드명 수정 및 필드 추가
+
+  - 엔티티
+    - 일관성을 위해 binaryContent의 필드명 수정.
+
+  - 레포지토리
+    - 경로를 하드코딩이 아닌 @Value를 통해 주입
+      - 그에 따른 path를 생성자에서 초기화
+    - 객체를 사용하지 않는 존재 체크의 경우 boolean으로 존재 체크로 변경.
+
+  - 서비스
+    - 변수나 필드명 축약하지 않고 기존 단어 유지
+    - 내부 검증만 하는 메서드를 private로 전환
+    - optional의 경우 조건문으로 예외 처리가 아닌 orElse로 수정.
+</details>

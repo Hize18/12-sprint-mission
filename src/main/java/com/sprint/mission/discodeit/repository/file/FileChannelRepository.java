@@ -2,6 +2,7 @@ package com.sprint.mission.discodeit.repository.file;
 
 import com.sprint.mission.discodeit.entity.Channel;
 import com.sprint.mission.discodeit.repository.ChannelRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Repository;
 
@@ -14,9 +15,13 @@ import java.util.*;
 @ConditionalOnProperty(name ="12-sprint-mission.repository.type", havingValue = "file")
 public class FileChannelRepository implements ChannelRepository {
     private final Map<UUID, Channel> data;
-    private final Path path = Path.of(System.getProperty("user.dir"), "data_repo/channel.ser");
+    private final Path path;
 
-    public FileChannelRepository() {
+    public FileChannelRepository(
+            @Value("${12-sprint-mission.repository.file-directory:data}") String directory
+    ) {
+        path = Path.of(System.getProperty("user.dir"), directory,"channel.ser");
+
         Map<UUID, Channel> temp;
 
         try {
@@ -80,6 +85,11 @@ public class FileChannelRepository implements ChannelRepository {
         List<Channel> list = new ArrayList<>(data.values());
         list.sort(Comparator.comparing(Channel::getUpdatedAt));
         return list;
+    }
+
+    @Override
+    public boolean existsById(UUID id) {
+        return data.containsKey(id);
     }
 
     @Override

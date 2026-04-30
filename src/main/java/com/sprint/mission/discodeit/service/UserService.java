@@ -8,10 +8,6 @@ import java.util.List;
 import java.util.UUID;
 
 public interface UserService {
-    boolean isUniqueUsername(String username);
-
-    boolean isUniqueEmail(String email);
-
     UserResponse create(UserCreateRequest request);
 
     UserResponse findById(UUID id);
@@ -20,7 +16,7 @@ public interface UserService {
 
     List<UserResponse> findAll();
 
-    boolean update(UUID srcUserId, UUID dstUserId, UserUpdateRequest request);
+    void update(UUID srcUserId, UUID dstUserId, UserUpdateRequest request);
 
-    boolean delete(UUID srcUserId, UUID dstUserId);
+    void delete(UUID srcUserId, UUID dstUserId);
 }

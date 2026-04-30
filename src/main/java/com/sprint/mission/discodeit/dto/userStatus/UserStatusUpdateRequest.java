@@ -2,10 +2,10 @@ package com.sprint.mission.discodeit.dto.userStatus;
 
 import java.util.UUID;
 
-public record UserStatusUpdate(
+public record UserStatusUpdateRequest(
         UUID id
 ) {
-    public UserStatusUpdate {
+    public UserStatusUpdateRequest {
         if (id == null) throw new IllegalArgumentException("id is null.");
     }
 }

@@ -30,7 +30,7 @@
 - UUID id
 - String fileName
 - String contentType
-- byte[] content
+- byte[] bytes
 - Instant createdAt
 
 ### ReadStatus

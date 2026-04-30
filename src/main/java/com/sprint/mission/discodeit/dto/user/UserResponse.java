@@ -13,9 +13,10 @@ public record UserResponse(
         String username,
         String email,
         Instant createdAt,
-        Instant updatedAt
+        Instant updatedAt,
+        boolean online
 ) {
-    public static UserResponse from(User user) {
+    public static UserResponse from(User user, boolean online) {
         if (user == null) {
             throw new IllegalArgumentException("User is null");
         }
@@ -26,7 +27,8 @@ public record UserResponse(
                 user.getUsername(),
                 user.getEmail(),
                 user.getCreatedAt(),
-                user.getUpdatedAt()
+                user.getUpdatedAt(),
+                online
         );
     }
 

@@ -15,22 +15,22 @@ public class BinaryContent implements Serializable {
     private final UUID id;
     private final String fileName;
     private final String contentType;
-    private final byte[] content;
+    private final byte[] bytes;
     private final Instant createdAt;
 
-    public BinaryContent(String fileName, String contentType, byte[] content) {
+    public BinaryContent(String fileName, String contentType, byte[] bytes) {
         if (fileName == null) throw new IllegalArgumentException("fileName is null.");
         if (contentType == null) throw new IllegalArgumentException("contentType is null.");
-        if (content == null) throw new IllegalArgumentException("content is null.");
+        if (bytes == null) throw new IllegalArgumentException("content is null.");
 
         if (fileName.isBlank()) throw new IllegalArgumentException("fileName is blank.");
         if (contentType.isBlank()) throw new IllegalArgumentException("contentType is blank.");
-        if (content.length == 0) throw new IllegalArgumentException("content is empty.");
+        if (bytes.length == 0) throw new IllegalArgumentException("content is empty.");
 
         this.id = UUID.randomUUID();
         this.fileName = fileName;
         this.contentType = contentType;
-        this.content = Arrays.copyOf(content, content.length);
+        this.bytes = Arrays.copyOf(bytes, bytes.length);
         this.createdAt = Instant.now();
     }
 }

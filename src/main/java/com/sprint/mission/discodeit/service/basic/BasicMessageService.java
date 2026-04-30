@@ -19,17 +19,18 @@ import java.util.*;
 @Service
 @RequiredArgsConstructor
 public class BasicMessageService implements MessageService {
-    private final MessageRepository mr;
-    private final ChannelRepository cr;
-    private final UserRepository ur;
-    private final BinaryContentRepository bcr;
+    private final MessageRepository messageRepository;
+    private final ChannelRepository channelRepository;
+    private final UserRepository userRepository;
+    private final BinaryContentRepository binaryContentRepository;
 
     @Override
     public MessageResponse create(MessageCreateRequest request) {
         if (request == null) throw new IllegalArgumentException("message is null.");
 
-        cr.findById(request.channelId()).orElseThrow(() -> new NoSuchElementException("channel not found."));
-        ur.findById(request.userId()).orElseThrow(() -> new NoSuchElementException("user not found."));
+        if(!channelRepository.existsById(request.channelId())) throw new NoSuchElementException("channel not found.");
+
+        if(!userRepository.existsById(request.userId())) throw new NoSuchElementException("user not found.");
 
         List<UUID> attachmentIds = createAttachments(request.attachmentList());
 
@@ -40,7 +41,7 @@ public class BasicMessageService implements MessageService {
                 attachmentIds
         );
 
-        return MessageResponse.from(mr.save(message));
+        return MessageResponse.from(messageRepository.save(message));
     }
 
     private List<UUID> createAttachments(List<BinaryContentCreateRequest> attachmentRequests) {
@@ -55,10 +56,10 @@ public class BasicMessageService implements MessageService {
             BinaryContent bc = new BinaryContent(
                     attachmentRequest.fileName(),
                     attachmentRequest.contentType(),
-                    attachmentRequest.data()
+                    attachmentRequest.bytes()
             );
 
-            BinaryContent savedBinaryContent = bcr.save(bc);
+            BinaryContent savedBinaryContent = binaryContentRepository.save(bc);
             attachmentIds.add(savedBinaryContent.getId());
         }
 
@@ -70,22 +71,21 @@ public class BasicMessageService implements MessageService {
         if (id == null) throw new IllegalArgumentException("id is null.");
 
         return MessageResponse.from(
-                mr.findById(id).orElseThrow(() -> new NoSuchElementException("message not found."))
+                messageRepository.findById(id).orElseThrow(() -> new NoSuchElementException("message not found."))
         );
     }
 
     private Message findEntityById(UUID id) {
         if (id == null) throw new IllegalArgumentException("id is null.");
 
-        return mr.findById(id).orElseThrow(() -> new NoSuchElementException("message not found."));
-
+        return messageRepository.findById(id).orElseThrow(() -> new NoSuchElementException("message not found."));
     }
 
     @Override
     public List<MessageResponse> findByUserId(UUID userId) {
         if (userId == null) throw new IllegalArgumentException("userId is null.");
 
-        return mr.findByUserId(userId).stream()
+        return messageRepository.findByUserId(userId).stream()
                 .map(MessageResponse::from)
                 .toList();
     }
@@ -94,26 +94,27 @@ public class BasicMessageService implements MessageService {
     public List<MessageResponse> findAllByChannelId(UUID channelId) {
         if (channelId == null) throw new IllegalArgumentException("channelId is null.");
 
-        return mr.findByChannelId(channelId).stream()
+        return messageRepository.findByChannelId(channelId).stream()
                 .map(MessageResponse::from)
                 .toList();
     }
 
     @Override
     public List<MessageResponse> findAll() {
-        return mr.findAll().stream()
+        return messageRepository.findAll().stream()
                 .map(MessageResponse::from)
                 .toList();
     }
 
     @Override
-    public boolean update(UUID userId, MessageUpdateRequest request) {
+    public void update(UUID userId, UUID messageId, MessageUpdateRequest request) {
         if (userId == null) throw new IllegalArgumentException("userId is null.");
+        if (messageId == null) throw new IllegalArgumentException("messageId is null.");
         if (request == null) throw new IllegalArgumentException("messageRequest is null.");
 
-        Message message = findEntityById(request.messageId());
+        Message message = findEntityById(messageId);
 
-        if (!Objects.equals(message.getUserId(), userId)) return false;
+        if (!Objects.equals(message.getUserId(), userId)) throw new IllegalStateException("no permission");
 
         Message tempMessage = Message.copyOf(message);
 
@@ -124,25 +125,23 @@ public class BasicMessageService implements MessageService {
         } else {
             List<UUID> oldAttachmentIds = List.copyOf(tempMessage.getAttachmentIds());
             attachmentIds = createAttachments(request.attachmentList());
-            oldAttachmentIds.forEach(bcr::delete);
+            oldAttachmentIds.forEach(binaryContentRepository::delete);
         }
 
         tempMessage.update(request.content(), attachmentIds);
-        mr.save(tempMessage);
-        return true;
+        messageRepository.save(tempMessage);
     }
 
     @Override
-    public boolean delete(UUID userId, UUID messageId) {
+    public void delete(UUID userId, UUID messageId) {
         if (messageId == null) throw new IllegalArgumentException("messageId is null.");
         if (userId == null) throw new IllegalArgumentException("userId is null.");
 
         Message message = findEntityById(messageId);
 
-        if (!Objects.equals(message.getUserId(), userId)) return false;
+        if (!Objects.equals(message.getUserId(), userId)) throw new IllegalStateException("no permission");
 
-        if (!message.getAttachmentIds().isEmpty()) message.getAttachmentIds().forEach(bcr::delete);
-        mr.delete(messageId);
-        return true;
+        if (!message.getAttachmentIds().isEmpty()) message.getAttachmentIds().forEach(binaryContentRepository::delete);
+        messageRepository.delete(messageId);
     }
 }

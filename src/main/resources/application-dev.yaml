@@ -1,3 +1,4 @@
 12-sprint-mission:
   repository:
+    file-directory: "/data_repo"
     type: file

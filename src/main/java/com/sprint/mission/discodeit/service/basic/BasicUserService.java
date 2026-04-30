@@ -22,25 +22,9 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class BasicUserService implements UserService {
-    private final UserRepository ur;
-    private final BinaryContentRepository bcr;
-    private final UserStatusRepository usr;
-
-    @Override
-    public boolean isUniqueUsername(String username) {
-        if (username == null) throw new IllegalArgumentException("username is null.");
-
-        return ur.findAll().stream()
-                .noneMatch(user -> Objects.equals(user.getUsername(), username));
-    }
-
-    @Override
-    public boolean isUniqueEmail(String email) {
-        if (email == null) throw new IllegalArgumentException("email is null.");
-
-        return ur.findAll().stream()
-                .noneMatch(user -> Objects.equals(user.getEmail(), email));
-    }
+    private final UserRepository userRepository;
+    private final BinaryContentRepository binaryContentRepository;
+    private final UserStatusRepository userStatusRepository;
 
     @Override
     public UserResponse create(UserCreateRequest request) {
@@ -54,52 +38,52 @@ public class BasicUserService implements UserService {
                 request.password(),
                 profileImageId
         );
-        ur.save(user);
+        userRepository.save(user);
 
         UserStatus userStatus = new UserStatus(user.getId());
-        usr.save(userStatus);
+        userStatusRepository.save(userStatus);
 
-        return UserResponse.from(user);
+        return toResponse(user);
     }
 
     @Override
     public UserResponse findById(UUID id) {
         if (id == null) throw new IllegalArgumentException("id is null.");
 
-        return UserResponse.from(
-                ur.findById(id).orElseThrow(() -> new NoSuchElementException("user not found."))
-        );
+        return userRepository.findById(id)
+                .map(this::toResponse)
+                .orElseThrow(() -> new NoSuchElementException("user not found."));
     }
 
     private User findEntityById(UUID id) {
         if (id == null) throw new IllegalArgumentException("id is null.");
 
-        return ur.findById(id).orElseThrow(() -> new NoSuchElementException("user not found."));
+        return userRepository.findById(id).orElseThrow(() -> new NoSuchElementException("user not found."));
     }
 
     @Override
     public UserResponse findByUsername(String username) {
         if (username == null) throw new IllegalArgumentException("username is null.");
 
-        return UserResponse.from(
-                ur.findByUsername(username).orElseThrow(() -> new NoSuchElementException("user not found."))
-        );
+        return userRepository.findByUsername(username)
+                .map(this::toResponse)
+                .orElseThrow(() -> new NoSuchElementException("user not found."));
     }
 
     @Override
     public List<UserResponse> findAll() {
-        return ur.findAll().stream()
-                .map(UserResponse::from)
+        return userRepository.findAll().stream()
+                .map(this::toResponse)
                 .toList();
     }
 
     @Override
-    public boolean update(UUID srcUserId, UUID dstUserId, UserUpdateRequest request) {
+    public void update(UUID srcUserId, UUID dstUserId, UserUpdateRequest request) {
         if (srcUserId == null) throw new IllegalArgumentException("srcUserId is null.");
         if (dstUserId == null) throw new IllegalArgumentException("dstUserId is null.");
         if (request == null) throw new IllegalArgumentException("userUpdateRequest is null.");
 
-        if (!Objects.equals(srcUserId, dstUserId)) return false;
+        if (!Objects.equals(srcUserId, dstUserId)) throw new IllegalStateException("no permission");
 
         User targetUser = findEntityById(dstUserId);
 
@@ -130,35 +114,47 @@ public class BasicUserService implements UserService {
             profileImageId = checkProfileImageId(request.profileImage());
 
             if (oldProfileImageId != null) {
-                bcr.delete(oldProfileImageId);
+                binaryContentRepository.delete(oldProfileImageId);
             }
         }
 
         tempUser.update(username, email, password, profileImageId);
-        ur.save(tempUser);
-        return true;
+        userRepository.save(tempUser);
     }
 
     @Override
-    public boolean delete(UUID srcUserId, UUID dstUserId) {
+    public void delete(UUID srcUserId, UUID dstUserId) {
         if (srcUserId == null) throw new IllegalArgumentException("srcUserId is null.");
         if (dstUserId == null) throw new IllegalArgumentException("dstUserId is null.");
 
-        if (!Objects.equals(srcUserId, dstUserId)) return false;
+        if (!Objects.equals(srcUserId, dstUserId)) throw new IllegalStateException("no permission");
 
         User targetUser = findEntityById(dstUserId);
 
-        UserStatus userStatus = usr.findByUserId(targetUser.getId())
+        UserStatus userStatus = userStatusRepository.findByUserId(targetUser.getId())
                 .orElseThrow(() -> new NoSuchElementException("userStatus not found."));
 
         UUID profileImageId = targetUser.getProfileId();
         if (profileImageId != null) {
-            bcr.delete(profileImageId);
+            binaryContentRepository.delete(profileImageId);
         }
 
-        ur.delete(dstUserId);
-        usr.delete(userStatus.getId());
-        return true;
+        userRepository.delete(dstUserId);
+        userStatusRepository.delete(userStatus.getId());
+    }
+
+    private boolean isUniqueUsername(String username) {
+        if (username == null) throw new IllegalArgumentException("username is null.");
+
+        return userRepository.findAll().stream()
+                .noneMatch(user -> Objects.equals(user.getUsername(), username));
+    }
+
+    private boolean isUniqueEmail(String email) {
+        if (email == null) throw new IllegalArgumentException("email is null.");
+
+        return userRepository.findAll().stream()
+                .noneMatch(user -> Objects.equals(user.getEmail(), email));
     }
 
     private UUID checkProfileImageId(BinaryContentCreateRequest profileImage) {
@@ -168,12 +164,20 @@ public class BasicUserService implements UserService {
             BinaryContent bc = new BinaryContent(
                     profileImage.fileName(),
                     profileImage.contentType(),
-                    profileImage.data()
+                    profileImage.bytes()
             );
-            bcr.save(bc);
+            binaryContentRepository.save(bc);
             profileImageId = bc.getId();
         }
         return profileImageId;
+    }
+
+    private UserResponse toResponse(User user){
+        boolean online = userStatusRepository.findByUserId(user.getId())
+                .map(UserStatus::isActive)
+                .orElseThrow(() -> new NoSuchElementException("userStatus not found."));
+
+        return UserResponse.from(user, online);
     }
 
     private void validateCreateUser(UserCreateRequest request) {

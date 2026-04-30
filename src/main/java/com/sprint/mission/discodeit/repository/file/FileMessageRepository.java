@@ -2,6 +2,7 @@ package com.sprint.mission.discodeit.repository.file;
 
 import com.sprint.mission.discodeit.entity.Message;
 import com.sprint.mission.discodeit.repository.MessageRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Repository;
 
@@ -14,9 +15,13 @@ import java.util.*;
 @ConditionalOnProperty(name ="12-sprint-mission.repository.type", havingValue = "file")
 public class FileMessageRepository implements MessageRepository {
     private final Map<UUID, Message> data;
-    private final Path path = Path.of(System.getProperty("user.dir"), "data_repo/message.ser");
+    private final Path path;
 
-    public FileMessageRepository() {
+    public FileMessageRepository(
+            @Value("${12-sprint-mission.repository.file-directory:data}") String directory
+    ) {
+        path = Path.of(System.getProperty("user.dir"), directory,"message.ser");
+
         Map<UUID, Message> temp;
 
         try {
@@ -84,6 +89,11 @@ public class FileMessageRepository implements MessageRepository {
         List<Message> list = new ArrayList<>(data.values());
         list.sort(Comparator.comparing(Message::getUpdatedAt));
         return list;
+    }
+
+    @Override
+    public boolean existsById(UUID id) {
+        return data.containsKey(id);
     }
 
     @Override

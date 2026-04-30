@@ -2,6 +2,7 @@ package com.sprint.mission.discodeit.repository.file;
 
 import com.sprint.mission.discodeit.entity.BinaryContent;
 import com.sprint.mission.discodeit.repository.BinaryContentRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Repository;
 
@@ -14,9 +15,13 @@ import java.util.*;
 @ConditionalOnProperty(name ="12-sprint-mission.repository.type", havingValue = "file")
 public class FileBinaryContentRepository implements BinaryContentRepository {
     private final Map<UUID, BinaryContent> data;
-    private final Path path = Path.of(System.getProperty("user.dir"), "data_repo/binarycontent.ser");
+    private final Path path;
 
-    public FileBinaryContentRepository() {
+    public FileBinaryContentRepository(
+            @Value("${12-sprint-mission.repository.file-directory:data}") String directory
+    ) {
+        path = Path.of(System.getProperty("user.dir"), directory,"binarycontent.ser");
+
         Map<UUID, BinaryContent> temp;
 
         try {
@@ -62,6 +67,11 @@ public class FileBinaryContentRepository implements BinaryContentRepository {
         List<BinaryContent> list = new ArrayList<>(data.values());
         list.sort(Comparator.comparing(BinaryContent::getCreatedAt));
         return list;
+    }
+
+    @Override
+    public boolean existsById(UUID id) {
+        return data.containsKey(id);
     }
 
     @Override
