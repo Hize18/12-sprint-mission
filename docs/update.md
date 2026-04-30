@@ -75,3 +75,50 @@
         - optional의 경우 조건문으로 예외 처리가 아닌 orElse로 수정.
 
 </details>
+
+<details>
+<summary style="font-size: 20px; font-weight: bold;">Sprint 5</summary>
+
+### Sprint 5
+
+- 코드 컨벤션을 Google Java Style로 변경
+- ReentrantLock를 통한 원자성 확보
+- 주어진 API 스펙에 맞게 재구현
+- 멘토님의 리뷰를 참고하여 코드 수정
+    - 컨트롤러의 파라미터중 @Parameter -> @RequestParam으로 수정
+    - Custom Exception 추가 및 httpStatus 세분화
+    - GlobalException의 단순 출력부분을 @Slf4j를 사용하여 로깅 부분 수정
+    - 컨트롤러에서 반환하는 status 수정
+    - 패키지명 수정
+
+- Interceptor/ArgumentResolver 관련
+    - 기존에는 객체 삭제 시 권한 검증을 위해 owner 필드를 사용했으나
+      현재 요구사항 및 API 스펙에서는 별도의 인증/권한 로직이 필요하지 않음.
+    - 또한 login API는 단순히 User를 반환하는 구조이므로, session 기반 처리 역시 제거.
+    - 이에 따라 Interceptor/ArgumentResolver는 적용하지 않았으며,
+      추후 인증/권한 요구사항이 추가될 경우 해당 구조로 리팩토링 예정.
+
+---
+
+- 수정 사항
+    - Dto
+        - 응답 DTO를 API 요구 스펙에 맞게 변경
+        - 쓰지 않는 Dto 제거
+        - 요구하는 필드 추가 및 네이밍 변경
+
+    - 엔티티
+        - 요구하는 필드 추가 및 네이밍 변경
+
+    - 예외
+        - API 요청 검증 실패 시 400 Bad Request 반환하도록 예외 처리 수정
+        - CustomException 추가(NotFound, Duplicate, Unauthorized)
+        - status 코드에 따라 http status 세분화
+
+    - 레포지토리
+        - ReentrantLock를 사용
+
+    - 서비스
+        - 반환값을 API 요구 스펙에 따라 DTO에서 엔티티로 변경
+        - API 스펙에 없는 사용하지 않는 메서드 삭제
+
+</details>
