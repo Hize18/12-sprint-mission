@@ -8,6 +8,8 @@ import com.sprint.mission.discodeit.entity.Channel;
 import com.sprint.mission.discodeit.entity.ChannelType;
 import com.sprint.mission.discodeit.entity.Message;
 import com.sprint.mission.discodeit.entity.ReadStatus;
+import com.sprint.mission.discodeit.exception.DuplicateException;
+import com.sprint.mission.discodeit.exception.NotFoundException;
 import com.sprint.mission.discodeit.repository.ChannelRepository;
 import com.sprint.mission.discodeit.repository.MessageRepository;
 import com.sprint.mission.discodeit.repository.ReadStatusRepository;
@@ -15,7 +17,6 @@ import com.sprint.mission.discodeit.repository.UserRepository;
 import com.sprint.mission.discodeit.service.ChannelService;
 import java.time.Instant;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -37,7 +38,7 @@ public class BasicChannelService implements ChannelService {
     }
 
     if (!isUniqueName(request.name())) {
-      throw new IllegalStateException("name is duplicate.");
+      throw new DuplicateException("name is duplicate.");
     }
 
     Channel channel = new Channel(request.name(), request.description(), ChannelType.PUBLIC);
@@ -52,7 +53,7 @@ public class BasicChannelService implements ChannelService {
 
     for (UUID uuid : request.participantIds()) {
       if (!userRepository.existsById(uuid)) {
-        throw new NoSuchElementException("user not found.");
+        throw new NotFoundException("user not found.");
       }
     }
 
@@ -73,7 +74,7 @@ public class BasicChannelService implements ChannelService {
     }
 
     Channel channel = channelRepository.findById(channelId)
-        .orElseThrow(() -> new NoSuchElementException("channel not found."));
+        .orElseThrow(() -> new NotFoundException("channel not found."));
 
     return toChannelResponse(channel);
   }
@@ -84,7 +85,7 @@ public class BasicChannelService implements ChannelService {
     }
 
     return channelRepository.findById(channelId)
-        .orElseThrow(() -> new NoSuchElementException("channel not found."));
+        .orElseThrow(() -> new NotFoundException("channel not found."));
   }
 
   @Override
@@ -130,11 +131,11 @@ public class BasicChannelService implements ChannelService {
     }
 
     if (Objects.equals(channel.getName(), request.newName())) {
-      throw new IllegalStateException("name is same.");
+      throw new IllegalArgumentException("name is same.");
     }
 
     if (!isUniqueName(request.newName())) {
-      throw new IllegalStateException("name is duplicate.");
+      throw new DuplicateException("name is duplicate.");
     }
 
     Channel tempChannel = Channel.copyOf(channel);

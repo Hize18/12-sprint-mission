@@ -1,6 +1,7 @@
 package com.sprint.mission.discodeit.repository.file;
 
 import com.sprint.mission.discodeit.entity.Channel;
+import com.sprint.mission.discodeit.exception.FileStorageException;
 import com.sprint.mission.discodeit.repository.ChannelRepository;
 import com.sprint.mission.discodeit.util.FileLockProvider;
 import java.io.FileInputStream;
@@ -68,7 +69,7 @@ public class FileChannelRepository implements ChannelRepository {
     try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(path.toFile()))) {
       oos.writeObject(map);
     } catch (Exception e) {
-      throw new IllegalStateException("channel file save failed.", e);
+      throw new FileStorageException("channel file save failed.");
     } finally {
       lock.unlock();
     }

@@ -1,6 +1,7 @@
 package com.sprint.mission.discodeit.repository.file;
 
 import com.sprint.mission.discodeit.entity.Message;
+import com.sprint.mission.discodeit.exception.FileStorageException;
 import com.sprint.mission.discodeit.repository.MessageRepository;
 import com.sprint.mission.discodeit.util.FileLockProvider;
 import java.io.FileInputStream;
@@ -69,7 +70,7 @@ public class FileMessageRepository implements MessageRepository {
     try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(path.toFile()))) {
       oos.writeObject(map);
     } catch (Exception e) {
-      throw new IllegalStateException("message file save failed.", e);
+      throw new FileStorageException("message file save failed.");
     } finally {
       lock.unlock();
     }

@@ -1,6 +1,7 @@
 package com.sprint.mission.discodeit.repository.file;
 
 import com.sprint.mission.discodeit.entity.User;
+import com.sprint.mission.discodeit.exception.FileStorageException;
 import com.sprint.mission.discodeit.repository.UserRepository;
 import com.sprint.mission.discodeit.util.FileLockProvider;
 import java.io.FileInputStream;
@@ -69,7 +70,7 @@ public class FileUserRepository implements UserRepository {
     try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(path.toFile()))) {
       oos.writeObject(map);
     } catch (Exception e) {
-      throw new IllegalStateException("user file save failed.", e);
+      throw new FileStorageException("user file save failed.");
     } finally {
       lock.unlock();
     }

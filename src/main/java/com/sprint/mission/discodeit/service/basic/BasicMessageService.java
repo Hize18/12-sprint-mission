@@ -5,6 +5,7 @@ import com.sprint.mission.discodeit.dto.message.MessageCreateRequest;
 import com.sprint.mission.discodeit.dto.message.MessageUpdateRequest;
 import com.sprint.mission.discodeit.entity.BinaryContent;
 import com.sprint.mission.discodeit.entity.Message;
+import com.sprint.mission.discodeit.exception.NotFoundException;
 import com.sprint.mission.discodeit.repository.BinaryContentRepository;
 import com.sprint.mission.discodeit.repository.ChannelRepository;
 import com.sprint.mission.discodeit.repository.MessageRepository;
@@ -12,7 +13,6 @@ import com.sprint.mission.discodeit.repository.UserRepository;
 import com.sprint.mission.discodeit.service.MessageService;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -33,11 +33,11 @@ public class BasicMessageService implements MessageService {
     }
 
     if (!channelRepository.existsById(request.channelId())) {
-      throw new NoSuchElementException("channel not found.");
+      throw new NotFoundException("channel not found.");
     }
 
     if (!userRepository.existsById(request.authorId())) {
-      throw new NoSuchElementException("user not found.");
+      throw new NotFoundException("user not found.");
     }
 
     List<UUID> attachmentIds = createAttachments(request.attachmentList());
@@ -59,7 +59,7 @@ public class BasicMessageService implements MessageService {
     }
 
     return messageRepository.findById(messageId)
-        .orElseThrow(() -> new NoSuchElementException("message not found."));
+        .orElseThrow(() -> new NotFoundException("message not found."));
   }
 
   private Message findEntityById(UUID id) {
@@ -68,7 +68,7 @@ public class BasicMessageService implements MessageService {
     }
 
     return messageRepository.findById(id)
-        .orElseThrow(() -> new NoSuchElementException("message not found."));
+        .orElseThrow(() -> new NotFoundException("message not found."));
   }
 
   @Override

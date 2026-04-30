@@ -1,4 +1,4 @@
-package com.sprint.mission.discodeit.controller.REST;
+package com.sprint.mission.discodeit.controller.rest;
 
 import com.sprint.mission.discodeit.entity.BinaryContent;
 import com.sprint.mission.discodeit.service.BinaryContentService;

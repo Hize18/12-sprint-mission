@@ -1,9 +1,10 @@
-package com.sprint.mission.discodeit.controller.REST;
+package com.sprint.mission.discodeit.controller.rest;
 
 import com.sprint.mission.discodeit.dto.binaryContent.BinaryContentCreateRequest;
 import com.sprint.mission.discodeit.dto.message.MessageCreateRequest;
 import com.sprint.mission.discodeit.dto.message.MessageUpdateRequest;
 import com.sprint.mission.discodeit.entity.Message;
+import com.sprint.mission.discodeit.exception.FileProcessingException;
 import com.sprint.mission.discodeit.service.MessageService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.io.IOException;
@@ -105,7 +106,7 @@ public class MessageController {
           file.getBytes()
       );
     } catch (IOException e) {
-      throw new RuntimeException("file convert error", e);
+      throw new FileProcessingException("file convert error");
     }
   }
 }

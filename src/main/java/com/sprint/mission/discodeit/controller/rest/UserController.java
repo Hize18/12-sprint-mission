@@ -1,4 +1,4 @@
-package com.sprint.mission.discodeit.controller.REST;
+package com.sprint.mission.discodeit.controller.rest;
 
 import com.sprint.mission.discodeit.dto.binaryContent.BinaryContentCreateRequest;
 import com.sprint.mission.discodeit.dto.user.UserCreateRequest;
@@ -7,6 +7,7 @@ import com.sprint.mission.discodeit.dto.user.UserUpdateRequest;
 import com.sprint.mission.discodeit.dto.userStatus.UserStatusUpdateRequest;
 import com.sprint.mission.discodeit.entity.User;
 import com.sprint.mission.discodeit.entity.UserStatus;
+import com.sprint.mission.discodeit.exception.FileProcessingException;
 import com.sprint.mission.discodeit.service.UserService;
 import com.sprint.mission.discodeit.service.UserStatusService;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -90,7 +91,7 @@ public class UserController {
     userService.delete(userId);
     return ResponseEntity.noContent().build();
   }
-  
+
   @RequestMapping(value = "/{userId}/userStatus", method = RequestMethod.PATCH)
   public ResponseEntity<UserStatus> userStatusUpdateByUserId(
       @PathVariable UUID userId,
@@ -123,7 +124,7 @@ public class UserController {
           file.getBytes()
       );
     } catch (IOException e) {
-      throw new RuntimeException("file convert error", e);
+      throw new FileProcessingException("file convert error");
     }
   }
 }

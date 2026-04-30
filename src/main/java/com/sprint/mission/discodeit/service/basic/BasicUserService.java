@@ -7,13 +7,14 @@ import com.sprint.mission.discodeit.dto.user.UserUpdateRequest;
 import com.sprint.mission.discodeit.entity.BinaryContent;
 import com.sprint.mission.discodeit.entity.User;
 import com.sprint.mission.discodeit.entity.UserStatus;
+import com.sprint.mission.discodeit.exception.DuplicateException;
+import com.sprint.mission.discodeit.exception.NotFoundException;
 import com.sprint.mission.discodeit.repository.BinaryContentRepository;
 import com.sprint.mission.discodeit.repository.UserRepository;
 import com.sprint.mission.discodeit.repository.UserStatusRepository;
 import com.sprint.mission.discodeit.service.UserService;
 import java.time.Instant;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -54,7 +55,7 @@ public class BasicUserService implements UserService {
     }
 
     return userRepository.findById(userId)
-        .orElseThrow(() -> new NoSuchElementException("user not found."));
+        .orElseThrow(() -> new NotFoundException("user not found."));
   }
 
   private User findEntityById(UUID id) {
@@ -63,7 +64,7 @@ public class BasicUserService implements UserService {
     }
 
     return userRepository.findById(id)
-        .orElseThrow(() -> new NoSuchElementException("user not found."));
+        .orElseThrow(() -> new NotFoundException("user not found."));
   }
 
   @Override
@@ -128,7 +129,7 @@ public class BasicUserService implements UserService {
     User targetUser = findEntityById(userId);
 
     UserStatus userStatus = userStatusRepository.findByUserId(targetUser.getId())
-        .orElseThrow(() -> new NoSuchElementException("userStatus not found."));
+        .orElseThrow(() -> new NotFoundException("userStatus not found."));
 
     UUID profileImageId = targetUser.getProfileId();
     if (profileImageId != null) {
@@ -175,7 +176,7 @@ public class BasicUserService implements UserService {
   private UserDto toResponse(User user) {
     boolean online = userStatusRepository.findByUserId(user.getId())
         .map(UserStatus::isActive)
-        .orElseThrow(() -> new NoSuchElementException("userStatus not found."));
+        .orElseThrow(() -> new NotFoundException("userStatus not found."));
 
     return UserDto.from(user, online);
   }
@@ -186,24 +187,24 @@ public class BasicUserService implements UserService {
     }
 
     if (!isUniqueUsername(request.username())) {
-      throw new IllegalStateException("username is duplicate.");
+      throw new DuplicateException("username is duplicate.");
     }
     if (!isUniqueEmail(request.email())) {
-      throw new IllegalStateException("email is duplicate.");
+      throw new DuplicateException("email is duplicate.");
     }
   }
 
   private void validateDuplicateUsername(String newUsername, String oldUsername) {
     boolean isChangedUsername = !Objects.equals(newUsername, oldUsername);
     if (isChangedUsername && !isUniqueUsername(newUsername)) {
-      throw new IllegalStateException("username is duplicate.");
+      throw new DuplicateException("username is duplicate.");
     }
   }
 
   private void validateDuplicateEmail(String newEmail, String oldEmail) {
     boolean isChangedEmail = !Objects.equals(newEmail, oldEmail);
     if (isChangedEmail && !isUniqueEmail(newEmail)) {
-      throw new IllegalStateException("email is duplicate.");
+      throw new DuplicateException("email is duplicate.");
     }
   }
 }

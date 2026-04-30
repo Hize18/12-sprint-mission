@@ -1,6 +1,7 @@
 package com.sprint.mission.discodeit.repository.file;
 
 import com.sprint.mission.discodeit.entity.ReadStatus;
+import com.sprint.mission.discodeit.exception.FileStorageException;
 import com.sprint.mission.discodeit.repository.ReadStatusRepository;
 import com.sprint.mission.discodeit.util.FileLockProvider;
 import java.io.FileInputStream;
@@ -68,7 +69,7 @@ public class FileReadStatusRepository implements ReadStatusRepository {
     try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(path.toFile()))) {
       oos.writeObject(map);
     } catch (Exception e) {
-      throw new IllegalStateException("readStatus file save failed.", e);
+      throw new FileStorageException("readStatus file save failed.");
     } finally {
       lock.unlock();
     }

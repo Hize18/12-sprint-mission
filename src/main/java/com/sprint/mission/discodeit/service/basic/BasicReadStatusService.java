@@ -3,12 +3,13 @@ package com.sprint.mission.discodeit.service.basic;
 import com.sprint.mission.discodeit.dto.readStatus.ReadStatusCreateRequest;
 import com.sprint.mission.discodeit.dto.readStatus.ReadStatusUpdateRequest;
 import com.sprint.mission.discodeit.entity.ReadStatus;
+import com.sprint.mission.discodeit.exception.DuplicateException;
+import com.sprint.mission.discodeit.exception.NotFoundException;
 import com.sprint.mission.discodeit.repository.ChannelRepository;
 import com.sprint.mission.discodeit.repository.ReadStatusRepository;
 import com.sprint.mission.discodeit.repository.UserRepository;
 import com.sprint.mission.discodeit.service.ReadStatusService;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -28,16 +29,16 @@ public class BasicReadStatusService implements ReadStatusService {
     }
 
     if (!userRepository.existsById(request.userId())) {
-      throw new NoSuchElementException("user not found.");
+      throw new NotFoundException("user not found.");
     }
 
     if (!channelRepository.existsById(request.channelId())) {
-      throw new NoSuchElementException("channel not found.");
+      throw new NotFoundException("channel not found.");
     }
 
     if (readStatusRepository.findByUserIdAndChannelId(request.userId(), request.channelId())
         .isPresent()) {
-      throw new IllegalStateException("readStatus already exists.");
+      throw new DuplicateException("readStatus already exists.");
     }
 
     ReadStatus status = new ReadStatus(request.userId(), request.channelId(), request.lastReadAt());
@@ -52,7 +53,7 @@ public class BasicReadStatusService implements ReadStatusService {
     }
 
     return readStatusRepository.findById(readStatusId)
-        .orElseThrow(() -> new NoSuchElementException("readStatus not found."));
+        .orElseThrow(() -> new NotFoundException("readStatus not found."));
   }
 
   @Override
@@ -74,7 +75,7 @@ public class BasicReadStatusService implements ReadStatusService {
     }
 
     ReadStatus status = readStatusRepository.findById(readStatusId)
-        .orElseThrow(() -> new NoSuchElementException("readStatus not found."));
+        .orElseThrow(() -> new NotFoundException("readStatus not found."));
 
     status.updateTime(request.newLastReadAt());
     return readStatusRepository.save(status);
@@ -87,7 +88,7 @@ public class BasicReadStatusService implements ReadStatusService {
     }
 
     if (!readStatusRepository.existsById(readStatusId)) {
-      throw new NoSuchElementException("readStatus not found.");
+      throw new NotFoundException("readStatus not found.");
     }
     readStatusRepository.delete(readStatusId);
   }

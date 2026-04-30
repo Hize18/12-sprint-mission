@@ -1,4 +1,4 @@
-package com.sprint.mission.discodeit.controller.REST;
+package com.sprint.mission.discodeit.controller.rest;
 
 import com.sprint.mission.discodeit.dto.auth.LoginRequest;
 import com.sprint.mission.discodeit.entity.User;
@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
   private final AuthService authService;
-  
+
   @RequestMapping(value = "/login", method = RequestMethod.POST)
   public ResponseEntity<User> login(
       @RequestBody LoginRequest loginRequest
