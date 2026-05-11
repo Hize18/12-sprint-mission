@@ -1,6 +1,7 @@
 ## Domain Model
 
 ### User
+
 - UUID id
 - UUID profileId (BinaryContent 참조)
 - String username (unique)
@@ -10,39 +11,47 @@
 - Instant updatedAt
 
 ### Channel
+
 - UUID id
-- UUID ownerId
-- ChannelType channelType (PUBLIC / PRIVATE)
+- ChannelType type (PUBLIC / PRIVATE)
 - String name (PUBLIC일 때만 사용)
+- String description
 - Instant createdAt
 - Instant updatedAt
 
 ### Message
+
 - UUID id
 - UUID channelId
-- UUID userId
+- UUID authorId
 - String content
 - List<UUID> attachmentIds (BinaryContent 참조)
 - Instant createdAt
 - Instant updatedAt
 
 ### BinaryContent(immutable)
+
 - UUID id
 - String fileName
 - String contentType
+- long size
 - byte[] bytes
 - Instant createdAt
 
 ### ReadStatus
+
 - UUID id
 - UUID userId
 - UUID channelId
+- Instant lastReadAt
 - Instant createdAt
 - Instant updatedAt
 
 ### UserStatus
+
 - UUID id
 - UUID userId
+- Instant lastActiveAt
 - Instant createdAt
 - Instant updatedAt
 

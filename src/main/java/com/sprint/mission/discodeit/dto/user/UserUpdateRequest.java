@@ -3,20 +3,18 @@ package com.sprint.mission.discodeit.dto.user;
 import com.sprint.mission.discodeit.dto.binaryContent.BinaryContentCreateRequest;
 
 public record UserUpdateRequest(
-        String username,
-        String email,
-        String password,
-        BinaryContentCreateRequest profileImage
+    String newUsername,
+    String newEmail,
+    String newPassword,
+    BinaryContentCreateRequest profileImage
 ) {
-    public UserUpdateRequest {
-        if (username != null && username.isBlank()) {
-            throw new IllegalArgumentException("username is blank.");
-        }
-        if (email != null && email.isBlank()) {
-            throw new IllegalArgumentException("email is blank.");
-        }
-        if (password != null && password.isBlank()) {
-            throw new IllegalArgumentException("password is blank.");
-        }
+
+  public UserUpdateRequest {
+    if (newUsername != null && newUsername.isBlank()) {
+      throw new IllegalArgumentException("newUsername is blank.");
     }
+    if (newEmail != null && newEmail.isBlank()) {
+      throw new IllegalArgumentException("newEmail is blank.");
+    }
+  }
 }

@@ -1,13 +1,14 @@
 package com.sprint.mission.discodeit.dto.readStatus;
 
-import java.util.UUID;
+import java.time.Instant;
 
 public record ReadStatusUpdateRequest(
-        UUID userId,
-        UUID channelId
+    Instant newLastReadAt
 ) {
-    public ReadStatusUpdateRequest {
-        if (userId == null) throw new IllegalArgumentException("userId is null.");
-        if (channelId == null) throw new IllegalArgumentException("channelId is null.");
+
+  public ReadStatusUpdateRequest {
+    if (newLastReadAt == null) {
+      throw new IllegalArgumentException("newLastReadAt is null.");
     }
+  }
 }
