@@ -4,20 +4,51 @@ import com.sprint.mission.discodeit.entity.Message;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
-public interface MessageRepository {
+public interface MessageRepository extends JpaRepository<Message, UUID> {
 
-  Message save(Message message);
+  @Query("""
+      select distinct m
+          from Message m
+          join fetch m.channel c
+          left join fetch m.author a
+          left join fetch a.profile
+          left join fetch a.status
+          left join fetch m.attachments
+          where m.id = :messageId
+      """)
+  Optional<Message> findDetailById(UUID messageId);
 
-  Optional<Message> findById(UUID id);
+  @Query("""
+      select m.channel.id, max(m.createdAt)
+      from Message m
+      where m.channel.id in :channelIds
+      group by m.channel.id
+      """)
+  List<Object[]> findLastMessageAtByChannelIds(List<UUID> channelIds);
 
-  List<Message> findByChannelId(UUID channelId);
+  @Query("""
+      select distinct m
+      from Message m
+      join fetch m.channel c
+      left join fetch m.author a
+      left join fetch a.profile
+      left join fetch a.status
+      left join fetch m.attachments
+      where m.id in :messageIds
+      """)
+  List<Message> findAllDetailByIdIn(List<UUID> messageIds);
 
-  List<Message> findByUserId(UUID userId);
+  @Query("""
+      select m.id
+      from Message m
+      where m.channel.id = :channelId
+      """)
+  Page<UUID> findIdsByChannelId(UUID channelId, Pageable pageable);
 
-  List<Message> findAll();
-
-  boolean existsById(UUID id);
-
-  void delete(UUID id);
+  Optional<Message> findTopByChannelIdOrderByCreatedAtDesc(UUID channelId);
 }
