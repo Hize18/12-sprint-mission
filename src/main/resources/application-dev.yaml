@@ -1,4 +1,5 @@
 12-sprint-mission:
-  repository:
-    file-directory: "/data_repo"
-    type: file
+  storage:
+    local:
+      root-path: local_storage
+    type: local
