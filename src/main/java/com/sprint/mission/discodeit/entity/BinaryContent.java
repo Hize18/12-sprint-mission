@@ -1,50 +1,50 @@
 package com.sprint.mission.discodeit.entity;
 
-import java.io.Serial;
-import java.io.Serializable;
-import java.time.Instant;
-import java.util.Arrays;
-import java.util.UUID;
+import com.sprint.mission.discodeit.entity.base.BaseEntity;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
+import lombok.experimental.SuperBuilder;
 
+@Entity
+@Table(name = "binary_contents")
 @Getter
-public class BinaryContent implements Serializable {
+@Setter
+@ToString(callSuper = true)
+@SuperBuilder
+//@AllArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class BinaryContent extends BaseEntity {
 
-  @Serial
-  private static final long serialVersionUID = 1L;
-  private final UUID id;
-  private final String fileName;
-  private final String contentType;
-  private final long size;
-  private final byte[] bytes;
-  private final Instant createdAt;
+  @Column(name = "file_name", nullable = false)
+  private String fileName;
 
-  public BinaryContent(String fileName, String contentType, byte[] bytes) {
-    if (fileName == null) {
-      throw new IllegalArgumentException("fileName is null.");
-    }
-    if (contentType == null) {
-      throw new IllegalArgumentException("contentType is null.");
-    }
-    if (bytes == null) {
-      throw new IllegalArgumentException("content is null.");
-    }
+  @Column(name = "size", nullable = false)
+  private Long size;
 
-    if (fileName.isBlank()) {
+  @Column(name = "content_type", nullable = false)
+  private String contentType;
+
+  public BinaryContent(String fileName, long size, String contentType) {
+    if (fileName == null || fileName.isBlank()) {
       throw new IllegalArgumentException("fileName is blank.");
     }
-    if (contentType.isBlank()) {
-      throw new IllegalArgumentException("contentType is blank.");
-    }
-    if (bytes.length == 0) {
-      throw new IllegalArgumentException("content is empty.");
+
+    if (size < 0) {
+      throw new IllegalArgumentException("size is negative.");
     }
 
-    this.id = UUID.randomUUID();
+    if (contentType == null || contentType.isBlank()) {
+      throw new IllegalArgumentException("contentType is blank.");
+    }
+
     this.fileName = fileName;
+    this.size = size;
     this.contentType = contentType;
-    this.size = bytes.length;
-    this.bytes = Arrays.copyOf(bytes, bytes.length);
-    this.createdAt = Instant.now();
   }
 }
