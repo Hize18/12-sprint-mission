@@ -1,20 +1,30 @@
 package com.sprint.mission.discodeit.dto.binaryContent;
 
-public record BinaryContentCreateRequest(
+import java.util.UUID;
+
+public record BinaryContentDto(
+    UUID id,
     String fileName,
-    String contentType,
-    byte[] bytes
+    long size,
+    String contentType
 ) {
 
-  public BinaryContentCreateRequest {
+  public BinaryContentDto {
+    if (id == null) {
+      throw new IllegalArgumentException("id is null.");
+    }
+
     if (fileName == null || fileName.isBlank()) {
       throw new IllegalArgumentException("fileName is blank.");
     }
+
+    if (size < 0) {
+      throw new IllegalArgumentException("size is negative.");
+    }
+
     if (contentType == null || contentType.isBlank()) {
       throw new IllegalArgumentException("contentType is blank.");
     }
-    if (bytes == null || bytes.length == 0) {
-      throw new IllegalArgumentException("data is empty.");
-    }
   }
+
 }
