@@ -2,8 +2,9 @@ package com.sprint.mission.discodeit.controller.rest;
 
 import com.sprint.mission.discodeit.dto.binaryContent.BinaryContentCreateRequest;
 import com.sprint.mission.discodeit.dto.message.MessageCreateRequest;
+import com.sprint.mission.discodeit.dto.message.MessageDto;
 import com.sprint.mission.discodeit.dto.message.MessageUpdateRequest;
-import com.sprint.mission.discodeit.entity.Message;
+import com.sprint.mission.discodeit.dto.page.PageResponse;
 import com.sprint.mission.discodeit.exception.FileProcessingException;
 import com.sprint.mission.discodeit.service.MessageService;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -11,6 +12,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -34,7 +36,7 @@ public class MessageController {
       consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
       method = RequestMethod.POST
   )
-  public ResponseEntity<Message> createWithAttachments(
+  public ResponseEntity<MessageDto> createWithAttachments(
       @RequestPart("messageCreateRequest") MessageCreateRequest request,
       @RequestPart(value = "attachments", required = false) List<MultipartFile> attachments
   ) {
@@ -49,10 +51,13 @@ public class MessageController {
   }
 
   @RequestMapping(method = RequestMethod.GET)
-  public ResponseEntity<List<Message>> findAllByChannelId(
-      @RequestParam UUID channelId
+  public ResponseEntity<PageResponse<MessageDto>> findAllByChannelId(
+      @RequestParam UUID channelId,
+      Pageable pageable
   ) {
-    return ResponseEntity.ok(messageService.findAllByChannelId(channelId));
+    return ResponseEntity.ok(
+        messageService.findAllByChannelId(channelId, pageable)
+    );
   }
 
   @RequestMapping(
@@ -60,10 +65,10 @@ public class MessageController {
       consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
       method = RequestMethod.PATCH
   )
-  public ResponseEntity<Message> updateMessage(
+  public ResponseEntity<MessageDto> updateMessage(
+      @PathVariable UUID messageId,
       @RequestPart("messageUpdateRequest") MessageUpdateRequest request,
-      @RequestPart(value = "attachments", required = false) List<MultipartFile> attachments,
-      @PathVariable UUID messageId
+      @RequestPart(value = "attachments", required = false) List<MultipartFile> attachments
   ) {
     MessageUpdateRequest updateRequest = new MessageUpdateRequest(
         request.newContent(),
@@ -72,7 +77,7 @@ public class MessageController {
 
     messageService.update(messageId, updateRequest);
 
-    return ResponseEntity.ok(messageService.findById(messageId));
+    return ResponseEntity.ok(messageService.findDetailById(messageId));
   }
 
   @RequestMapping(value = "/{messageId}", method = RequestMethod.DELETE)
