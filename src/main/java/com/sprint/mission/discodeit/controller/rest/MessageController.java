@@ -9,6 +9,7 @@ import com.sprint.mission.discodeit.exception.FileProcessingException;
 import com.sprint.mission.discodeit.service.MessageService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -53,10 +54,11 @@ public class MessageController {
   @RequestMapping(method = RequestMethod.GET)
   public ResponseEntity<PageResponse<MessageDto>> findAllByChannelId(
       @RequestParam UUID channelId,
+      @RequestParam(required = false) Instant cursor,
       Pageable pageable
   ) {
     return ResponseEntity.ok(
-        messageService.findAllByChannelId(channelId, pageable)
+        messageService.findAllByChannelId(channelId, cursor, pageable)
     );
   }
 

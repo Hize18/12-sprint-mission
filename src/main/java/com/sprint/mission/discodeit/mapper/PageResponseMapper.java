@@ -1,6 +1,7 @@
 package com.sprint.mission.discodeit.mapper;
 
 import com.sprint.mission.discodeit.dto.page.PageResponse;
+import java.util.List;
 import org.mapstruct.Mapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Slice;
@@ -8,10 +9,10 @@ import org.springframework.data.domain.Slice;
 @Mapper(componentModel = "spring")
 public interface PageResponseMapper {
 
-  default <T> PageResponse<T> fromSlice(Slice<T> slice) {
+  default <T> PageResponse<T> fromSlice(List<T> content, Object nextCursor, Slice<?> slice) {
     return new PageResponse<>(
-        slice.getContent(),
-        slice.getNumber(),
+        content,
+        nextCursor,
         slice.getSize(),
         slice.hasNext(),
         null

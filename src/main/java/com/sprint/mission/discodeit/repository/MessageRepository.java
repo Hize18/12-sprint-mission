@@ -1,11 +1,12 @@
 package com.sprint.mission.discodeit.repository;
 
 import com.sprint.mission.discodeit.entity.Message;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
@@ -48,7 +49,17 @@ public interface MessageRepository extends JpaRepository<Message, UUID> {
       from Message m
       where m.channel.id = :channelId
       """)
-  Page<UUID> findIdsByChannelId(UUID channelId, Pageable pageable);
+  Slice<UUID> findIdsByChannelId(UUID channelId, Pageable pageable);
+
+  @Query("""
+      select m.id
+      from Message m
+      where m.channel.id = :channelId
+        and m.createdAt < :cursor
+      """)
+  Slice<UUID> findIdsByChannelIdAndCreatedAtLessThan(UUID channelId, Instant cursor,
+      Pageable pageable
+  );
 
   Optional<Message> findTopByChannelIdOrderByCreatedAtDesc(UUID channelId);
 }

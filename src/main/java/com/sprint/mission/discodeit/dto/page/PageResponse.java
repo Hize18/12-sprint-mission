@@ -4,7 +4,7 @@ import java.util.List;
 
 public record PageResponse<T>(
     List<T> content,
-    int number,
+    Object nextCursor,
     int size,
     boolean hasNext,
     Long totalElements
@@ -13,9 +13,6 @@ public record PageResponse<T>(
   public PageResponse {
     if (content == null) {
       throw new IllegalArgumentException("content is null.");
-    }
-    if (number < 0) {
-      throw new IllegalArgumentException("number is negative.");
     }
     if (size < 0) {
       throw new IllegalArgumentException("size is negative.");

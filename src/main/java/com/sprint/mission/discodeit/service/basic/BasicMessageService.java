@@ -19,14 +19,15 @@ import com.sprint.mission.discodeit.repository.MessageRepository;
 import com.sprint.mission.discodeit.repository.UserRepository;
 import com.sprint.mission.discodeit.service.MessageService;
 import com.sprint.mission.discodeit.storage.BinaryContentStorage;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -76,22 +77,31 @@ public class BasicMessageService implements MessageService {
 
   @Override
   @Transactional(readOnly = true)
-  public PageResponse<MessageDto> findAllByChannelId(UUID channelId, Pageable pageable) {
+  public PageResponse<MessageDto> findAllByChannelId(UUID channelId, Instant cursor,
+      Pageable pageable) {
     if (channelId == null) {
       throw new IllegalArgumentException("channelId is null.");
     }
-    Page<UUID> messageIdPage =
-        messageRepository.findIdsByChannelId(channelId, pageable);
+
+//    (:cursor is null or m.createdAt < :cursor)로 하나의 쿼리는 에러 발생
+    Slice<UUID> messageIdSlice = cursor == null
+        ? messageRepository.findIdsByChannelId(channelId, pageable)
+        : messageRepository.findIdsByChannelIdAndCreatedAtLessThan(channelId, cursor, pageable);
 
     Map<UUID, Message> messageMap = messageRepository
-        .findAllDetailByIdIn(messageIdPage.getContent()).stream()
+        .findAllDetailByIdIn(messageIdSlice.getContent()).stream()
         .collect(Collectors.toMap(Message::getId, message -> message));
 
-    Page<MessageDto> result = messageIdPage.map(messageId ->
-        messageMapper.toDto(messageMap.get(messageId))
-    );
+    List<MessageDto> content = messageIdSlice.getContent().stream()
+        .map(messageId -> messageMapper.toDto(messageMap.get(messageId)))
+        .toList();
 
-    return pageResponseMapper.fromPage(result);
+    Instant nextCursor = null;
+    if (messageIdSlice.hasNext() && !content.isEmpty()) {
+      nextCursor = content.get(content.size() - 1).createdAt();
+    }
+
+    return pageResponseMapper.fromSlice(content, nextCursor, messageIdSlice);
   }
 
   @Override
