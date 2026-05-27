@@ -1,22 +1,45 @@
 package com.sprint.mission.discodeit.entity;
 
-import java.io.Serial;
-import java.io.Serializable;
-import java.time.Instant;
-import java.util.UUID;
+import com.sprint.mission.discodeit.entity.base.BaseUpdatableEntity;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import java.util.ArrayList;
+import java.util.List;
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
+import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
+@Entity
+@Table(name = "channels")
 @Getter
-public class Channel implements Serializable {
+@Setter
+@ToString(callSuper = true, exclude = "readStatuses")
+@SuperBuilder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class Channel extends BaseUpdatableEntity {
 
-  @Serial
-  private static final long serialVersionUID = 1L;
-  private final UUID id;
-  private final ChannelType type;
+  @Column(name = "name")
   private String name;
+
+  @Column(name = "description")
   private String description;
-  private final Instant createdAt;
-  private Instant updatedAt;
+
+  @Enumerated(EnumType.STRING)
+  @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+  @Column(name = "type", nullable = false)
+  private ChannelType type;
+
+  @OneToMany(mappedBy = "channel")
+  private List<ReadStatus> readStatuses = new ArrayList<>();
 
   public Channel(String name, String description, ChannelType type) {
     if (type == null) {
@@ -24,55 +47,16 @@ public class Channel implements Serializable {
     }
 
     if (type == ChannelType.PUBLIC) {
-      if (name == null) {
-        throw new IllegalArgumentException("name is null.");
+      if (name == null || name.isBlank()) {
+        throw new IllegalArgumentException("name is blank.");
       }
       if (description == null) {
         throw new IllegalArgumentException("description is null.");
       }
-      if (name.isBlank()) {
-        throw new IllegalArgumentException("name is blank.");
-      }
     }
 
-    this.id = UUID.randomUUID();
     this.type = type;
     this.name = name;
     this.description = description;
-    this.createdAt = Instant.now();
-    this.updatedAt = createdAt;
-  }
-
-  public Channel(Channel channel) {
-    if (channel == null) {
-      throw new IllegalArgumentException("Channel is null.");
-    }
-
-    this.id = channel.getId();
-    this.type = channel.getType();
-    this.name = channel.getName();
-    this.description = channel.getDescription();
-    this.createdAt = channel.getCreatedAt();
-    this.updatedAt = channel.getUpdatedAt();
-  }
-
-  public static Channel copyOf(Channel channel) {
-    return new Channel(channel);
-  }
-
-  public void update(String name, String description) {
-    if (name == null) {
-      throw new IllegalArgumentException("name is null.");
-    }
-    if (description == null) {
-      throw new IllegalArgumentException("description is null.");
-    }
-    if (name.isBlank()) {
-      throw new IllegalArgumentException("name is blank.");
-    }
-
-    this.name = name;
-    this.description = description;
-    this.updatedAt = Instant.now();
   }
 }

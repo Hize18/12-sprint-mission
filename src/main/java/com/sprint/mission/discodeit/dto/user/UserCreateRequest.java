@@ -10,24 +10,14 @@ public record UserCreateRequest(
 ) {
 
   public UserCreateRequest {
-    if (username == null) {
-      throw new IllegalArgumentException("username is null.");
-    }
-    if (email == null) {
-      throw new IllegalArgumentException("email is null.");
-    }
-    if (password == null) {
-      throw new IllegalArgumentException("password is null.");
-    }
-
-    if (username.isBlank()) {
+    if (username == null || username.isBlank()) {
       throw new IllegalArgumentException("username is blank.");
     }
-    if (email.isBlank()) {
+    if (email == null || email.isBlank()) {
       throw new IllegalArgumentException("email is blank.");
     }
-      if (password.isBlank()) {
-          throw new IllegalArgumentException("password is blank.");
-      }
+    if (password == null || password.isBlank()) {
+      throw new IllegalArgumentException("password is blank.");
+    }
   }
 }

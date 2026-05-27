@@ -16,5 +16,8 @@ public record UserUpdateRequest(
     if (newEmail != null && newEmail.isBlank()) {
       throw new IllegalArgumentException("newEmail is blank.");
     }
+    if (newPassword != null && newPassword.isBlank()) {
+      throw new IllegalArgumentException("newPassword is blank.");
+    }
   }
 }

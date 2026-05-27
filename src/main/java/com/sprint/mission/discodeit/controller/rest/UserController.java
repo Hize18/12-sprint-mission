@@ -4,9 +4,8 @@ import com.sprint.mission.discodeit.dto.binaryContent.BinaryContentCreateRequest
 import com.sprint.mission.discodeit.dto.user.UserCreateRequest;
 import com.sprint.mission.discodeit.dto.user.UserDto;
 import com.sprint.mission.discodeit.dto.user.UserUpdateRequest;
+import com.sprint.mission.discodeit.dto.userStatus.UserStatusDto;
 import com.sprint.mission.discodeit.dto.userStatus.UserStatusUpdateRequest;
-import com.sprint.mission.discodeit.entity.User;
-import com.sprint.mission.discodeit.entity.UserStatus;
 import com.sprint.mission.discodeit.exception.FileProcessingException;
 import com.sprint.mission.discodeit.service.UserService;
 import com.sprint.mission.discodeit.service.UserStatusService;
@@ -39,7 +38,7 @@ public class UserController {
       consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
       method = RequestMethod.POST
   )
-  public ResponseEntity<User> createWithImage(
+  public ResponseEntity<UserDto> createWithImage(
       @RequestPart("userCreateRequest") UserCreateRequest request,
       @RequestPart(value = "profile", required = false) MultipartFile profile
   ) {
@@ -57,7 +56,7 @@ public class UserController {
 
   @RequestMapping(method = RequestMethod.GET)
   public ResponseEntity<List<UserDto>> findAll() {
-    return ResponseEntity.ok(userService.findAll());
+    return ResponseEntity.ok(userService.findAllWithFetch());
   }
 
   @RequestMapping(
@@ -65,7 +64,7 @@ public class UserController {
       consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
       method = RequestMethod.PATCH
   )
-  public ResponseEntity<User> updateUser(
+  public ResponseEntity<UserDto> updateUser(
       @PathVariable UUID userId,
       @RequestPart("userUpdateRequest") UserUpdateRequest request,
       @RequestPart(value = "profile", required = false) MultipartFile profile
@@ -81,7 +80,7 @@ public class UserController {
     );
 
     userService.update(userId, updateRequest);
-    return ResponseEntity.ok(userService.findById(userId));
+    return ResponseEntity.ok(userService.findDetailById(userId));
   }
 
   @RequestMapping(value = "/{userId}", method = RequestMethod.DELETE)
@@ -93,23 +92,11 @@ public class UserController {
   }
 
   @RequestMapping(value = "/{userId}/userStatus", method = RequestMethod.PATCH)
-  public ResponseEntity<UserStatus> userStatusUpdateByUserId(
+  public ResponseEntity<UserStatusDto> userStatusUpdateByUserId(
       @PathVariable UUID userId,
       @RequestBody UserStatusUpdateRequest request
   ) {
     return ResponseEntity.ok(userStatusService.updateByUserId(userId, request));
-  }
-
-  @RequestMapping(value = "/status/findAll", method = RequestMethod.GET)
-  public ResponseEntity<List<UserStatus>> findUserStatusAll() {
-    return ResponseEntity.status(HttpStatus.OK).body(userStatusService.findAll());
-  }
-
-  @RequestMapping(value = "/{userId}/userStatus", method = RequestMethod.GET)
-  public ResponseEntity<UserStatus> checkUserStatus(
-      @PathVariable UUID userId
-  ) {
-    return ResponseEntity.ok(userStatusService.findByUserId(userId));
   }
 
   private BinaryContentCreateRequest toBinaryContentCreateRequest(MultipartFile file) {

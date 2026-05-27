@@ -6,17 +6,11 @@ public record LoginRequest(
 ) {
 
   public LoginRequest {
-    if (username == null) {
-      throw new IllegalArgumentException("username is null.");
-    }
-    if (username.isBlank()) {
+    if (username == null || username.isBlank()) {
       throw new IllegalArgumentException("username is blank.");
     }
 
-    if (password == null) {
-      throw new IllegalArgumentException("password is null.");
-    }
-    if (password.isBlank()) {
+    if (password == null || password.isBlank()) {
       throw new IllegalArgumentException("password is blank.");
     }
   }

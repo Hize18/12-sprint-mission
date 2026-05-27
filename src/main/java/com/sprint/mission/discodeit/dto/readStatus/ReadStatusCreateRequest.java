@@ -17,7 +17,7 @@ public record ReadStatusCreateRequest(
       throw new IllegalArgumentException("channelId is null.");
     }
     if (lastReadAt == null) {
-      throw new IllegalArgumentException("lasReadAt is null.");
+      throw new IllegalArgumentException("lastReadAt is null.");
     }
   }
 }

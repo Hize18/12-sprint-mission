@@ -6,14 +6,11 @@ public record PublicChannelCreateRequest(
 ) {
 
   public PublicChannelCreateRequest {
-    if (name == null) {
-      throw new IllegalArgumentException("name is null.");
+    if (name == null || name.isBlank()) {
+      throw new IllegalArgumentException("name is blank.");
     }
     if (description == null) {
       throw new IllegalArgumentException("description is null.");
-    }
-    if (name.isBlank()) {
-      throw new IllegalArgumentException("name is blank.");
     }
   }
 }

@@ -12,9 +12,6 @@ public record MessageUpdateRequest(
     if (newContent == null) {
       throw new IllegalArgumentException("newContent is null.");
     }
-    if (newContent.isBlank()) {
-      throw new IllegalArgumentException("newContent is blank.");
-    }
 
     attachmentList = attachmentList == null ? List.of() : List.copyOf(attachmentList);
   }

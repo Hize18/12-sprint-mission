@@ -1,64 +1,75 @@
 package com.sprint.mission.discodeit.entity;
 
-import java.io.Serial;
-import java.io.Serializable;
-import java.time.Instant;
+import com.sprint.mission.discodeit.entity.base.BaseUpdatableEntity;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
+import lombok.experimental.SuperBuilder;
 
+@Entity
+@Table(name = "messages")
 @Getter
-public class Message implements Serializable {
+@Setter
+@ToString(callSuper = true, exclude = {"channel", "author", "attachments"})
+@SuperBuilder
+//@AllArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class Message extends BaseUpdatableEntity {
 
-  @Serial
-  private static final long serialVersionUID = 1L;
-  private final UUID id;
-  private final UUID channelId;
-  private final UUID authorId;
+  @Column(name = "content")
   private String content;
-  private List<UUID> attachmentIds;
-  private final Instant createdAt;
-  private Instant updatedAt;
 
-  public Message(UUID channelId, UUID authorId, String content, List<UUID> attachmentIds) {
-    if (channelId == null || authorId == null || content == null || attachmentIds == null) {
-      throw new IllegalArgumentException("Message is null.");
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "channel_id", nullable = false)
+  private Channel channel;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "author_id")
+  private User author;
+
+  //  정책상 공유가 아니라 개개인의 binary_content를 사용하니까
+  @OneToMany(
+      fetch = FetchType.LAZY,
+      cascade = CascadeType.ALL,
+      orphanRemoval = true
+  )
+  @JoinTable(
+      name = "message_attachments",
+      joinColumns = @JoinColumn(name = "message_id", nullable = false),
+      inverseJoinColumns = @JoinColumn(name = "attachment_id", nullable = false)
+  )
+  private List<BinaryContent> attachments = new ArrayList<>();
+
+  public Message(String content, Channel channel, User author, List<BinaryContent> attachments) {
+    if (content == null) {
+      throw new IllegalArgumentException("content is null.");
+    }
+    if (channel == null) {
+      throw new IllegalArgumentException("channel is null.");
+    }
+    if (author == null) {
+      throw new IllegalArgumentException("author is null.");
+    }
+    if (attachments == null) {
+      throw new IllegalArgumentException("attachments is null.");
     }
 
-    this.id = UUID.randomUUID();
-    this.channelId = channelId;
-    this.authorId = authorId;
-    this.attachmentIds = List.copyOf(attachmentIds);
+    this.channel = channel;
+    this.author = author;
+    this.attachments = new ArrayList<>(List.copyOf(attachments));
     this.content = content;
-    this.createdAt = Instant.now();
-    this.updatedAt = createdAt;
-  }
-
-  public Message(Message message) {
-    if (message == null) {
-      throw new IllegalArgumentException("Message is null.");
-    }
-
-    this.id = message.getId();
-    this.channelId = message.getChannelId();
-    this.authorId = message.getAuthorId();
-    this.attachmentIds = List.copyOf(message.getAttachmentIds());
-    this.content = message.getContent();
-    this.createdAt = message.getCreatedAt();
-    this.updatedAt = message.getUpdatedAt();
-  }
-
-  public static Message copyOf(Message message) {
-    return new Message(message);
-  }
-
-  public void update(String content, List<UUID> attachmentIds) {
-    if (content == null || attachmentIds == null) {
-      throw new IllegalArgumentException("Message update error.");
-    }
-
-    this.attachmentIds = List.copyOf(attachmentIds);
-    this.content = content;
-    this.updatedAt = Instant.now();
   }
 }
