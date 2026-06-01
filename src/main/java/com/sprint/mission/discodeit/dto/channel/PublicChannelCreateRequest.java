@@ -1,14 +1,19 @@
 package com.sprint.mission.discodeit.dto.channel;
 
-import java.util.UUID;
-
 public record PublicChannelCreateRequest(
-        UUID ownerId,
-        String name
+    String name,
+    String description
 ) {
-    public PublicChannelCreateRequest {
-        if (ownerId == null) throw new IllegalArgumentException("ownerId is null.");
-        if (name == null) throw new IllegalArgumentException("name is null.");
-        if (name.isBlank()) throw new IllegalArgumentException("name is blank.");
+
+  public PublicChannelCreateRequest {
+    if (name == null) {
+      throw new IllegalArgumentException("name is null.");
     }
+    if (description == null) {
+      throw new IllegalArgumentException("description is null.");
+    }
+    if (name.isBlank()) {
+      throw new IllegalArgumentException("name is blank.");
+    }
+  }
 }
