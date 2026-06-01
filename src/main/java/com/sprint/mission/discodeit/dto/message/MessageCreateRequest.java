@@ -1,14 +1,11 @@
 package com.sprint.mission.discodeit.dto.message;
 
-import com.sprint.mission.discodeit.dto.binaryContent.BinaryContentCreateRequest;
-import java.util.List;
 import java.util.UUID;
 
 public record MessageCreateRequest(
     UUID channelId,
     UUID authorId,
-    String content,
-    List<BinaryContentCreateRequest> attachmentList
+    String content
 ) {
 
   public MessageCreateRequest {
@@ -22,7 +19,5 @@ public record MessageCreateRequest(
     if (content == null) {
       throw new IllegalArgumentException("content is null.");
     }
-
-    attachmentList = attachmentList == null ? List.of() : List.copyOf(attachmentList);
   }
 }

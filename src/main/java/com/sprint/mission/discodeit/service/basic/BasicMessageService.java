@@ -46,20 +46,21 @@ public class BasicMessageService implements MessageService {
 
   @Override
   @Transactional
-  public MessageDto create(MessageCreateRequest request) {
-    if (request == null) {
+  public MessageDto create(MessageCreateRequest messageCreateRequest,
+      List<BinaryContentCreateRequest> attachmentRequests) {
+    if (messageCreateRequest == null) {
       throw new IllegalArgumentException("message is null.");
     }
 
-    Channel channel = channelRepository.findById(request.channelId())
+    Channel channel = channelRepository.findById(messageCreateRequest.channelId())
         .orElseThrow(() -> new NotFoundException("channel not found."));
 
-    User author = userRepository.findDetailById(request.authorId())
+    User author = userRepository.findDetailById(messageCreateRequest.authorId())
         .orElseThrow(() -> new NotFoundException("user not found."));
 
-    List<BinaryContent> attachments = createAttachments(request.attachmentList());
+    List<BinaryContent> attachments = createAttachments(attachmentRequests);
 
-    Message message = messageMapper.toEntity(request, channel, author, attachments);
+    Message message = messageMapper.toEntity(messageCreateRequest, channel, author, attachments);
     return messageMapper.toDto(messageRepository.save(message));
   }
 
@@ -106,21 +107,22 @@ public class BasicMessageService implements MessageService {
 
   @Override
   @Transactional
-  public MessageDto update(UUID messageId, MessageUpdateRequest request) {
+  public MessageDto update(UUID messageId, MessageUpdateRequest messageUpdateRequest,
+      List<BinaryContentCreateRequest> attachmentRequests) {
     if (messageId == null) {
       throw new IllegalArgumentException("messageId is null.");
     }
-    if (request == null) {
+    if (messageUpdateRequest == null) {
       throw new IllegalArgumentException("messageRequest is null.");
     }
 
     Message message = messageRepository.findDetailById(messageId)
         .orElseThrow(() -> new NotFoundException("message not found."));
 
-    message.setContent(request.newContent());
+    message.setContent(messageUpdateRequest.newContent());
 
-    if (!request.attachmentList().isEmpty()) {
-      List<BinaryContent> attachments = createAttachments(request.attachmentList());
+    if (!attachmentRequests.isEmpty()) {
+      List<BinaryContent> attachments = createAttachments(attachmentRequests);
       message.setAttachments(attachments);
     }
 

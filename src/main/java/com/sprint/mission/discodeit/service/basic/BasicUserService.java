@@ -18,6 +18,7 @@ import com.sprint.mission.discodeit.storage.BinaryContentStorage;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -35,22 +36,23 @@ public class BasicUserService implements UserService {
 
   @Override
   @Transactional
-  public UserDto create(UserCreateRequest request) {
-    if (request == null) {
+  public UserDto create(UserCreateRequest userCreateRequest,
+      Optional<BinaryContentCreateRequest> profileCreateRequest) {
+    if (userCreateRequest == null) {
       throw new IllegalArgumentException("user is null.");
     }
 
-    if (!isUniqueUsername(request.username())) {
+    if (!isUniqueUsername(userCreateRequest.username())) {
       throw new DuplicateException("username is duplicate.");
     }
 
-    if (!isUniqueEmail(request.email())) {
+    if (!isUniqueEmail(userCreateRequest.email())) {
       throw new DuplicateException("email is duplicate.");
     }
 
-    BinaryContent binaryContent = createProfile(request.profileImage());
+    BinaryContent binaryContent = createProfile(profileCreateRequest);
 
-    User user = userMapper.toEntity(request, binaryContent);
+    User user = userMapper.toEntity(userCreateRequest, binaryContent);
     UserStatus userStatus = new UserStatus(user, Instant.now());
     user.setStatus(userStatus);
 
@@ -82,41 +84,42 @@ public class BasicUserService implements UserService {
 
   @Override
   @Transactional
-  public UserDto update(UUID userId, UserUpdateRequest request) {
+  public UserDto update(UUID userId, UserUpdateRequest userUpdateRequest,
+      Optional<BinaryContentCreateRequest> profileCreateRequest) {
     if (userId == null) {
       throw new IllegalArgumentException("userId is null.");
     }
-    if (request == null) {
+    if (userUpdateRequest == null) {
       throw new IllegalArgumentException("userUpdateRequest is null.");
     }
 
     User user = userRepository.findDetailById(userId)
         .orElseThrow(() -> new NotFoundException("user not found."));
 
-    if (request.newUsername() != null) {
-      if (!Objects.equals(request.newUsername(), user.getUsername())
-          && !isUniqueUsername(request.newUsername())) {
+    if (userUpdateRequest.newUsername() != null) {
+      if (!Objects.equals(userUpdateRequest.newUsername(), user.getUsername())
+          && !isUniqueUsername(userUpdateRequest.newUsername())) {
         throw new DuplicateException("username is duplicate.");
       }
-      user.setUsername(request.newUsername());
+      user.setUsername(userUpdateRequest.newUsername());
     }
-    if (request.newEmail() != null) {
-      if (!Objects.equals(request.newEmail(), user.getEmail())
-          && !isUniqueEmail(request.newEmail())) {
+    if (userUpdateRequest.newEmail() != null) {
+      if (!Objects.equals(userUpdateRequest.newEmail(), user.getEmail())
+          && !isUniqueEmail(userUpdateRequest.newEmail())) {
         throw new DuplicateException("email is duplicate.");
       }
-      user.setEmail(request.newEmail());
+      user.setEmail(userUpdateRequest.newEmail());
     }
 
-    if (request.newPassword() != null) {
-      user.setPassword(request.newPassword());
+    if (userUpdateRequest.newPassword() != null) {
+      user.setPassword(userUpdateRequest.newPassword());
     }
 
     BinaryContent oldProfileImage = null;
-    if (request.profileImage() != null) {
+    if (profileCreateRequest.isPresent()) {
       oldProfileImage = user.getProfile();
 
-      BinaryContent newProfileImage = createProfile(request.profileImage());
+      BinaryContent newProfileImage = createProfile(profileCreateRequest);
       user.setProfile(newProfileImage);
     }
 
@@ -162,12 +165,13 @@ public class BasicUserService implements UserService {
     return !userRepository.existsByEmail(email);
   }
 
-  private BinaryContent createProfile(BinaryContentCreateRequest profileImage) {
+  private BinaryContent createProfile(Optional<BinaryContentCreateRequest> profileImage) {
     BinaryContent binaryContent = null;
 
-    if (profileImage != null) {
-      binaryContent = binaryContentRepository.save(binaryContentMapper.toEntity(profileImage));
-      binaryContentStorage.put(binaryContent.getId(), profileImage.bytes());
+    if (profileImage.isPresent()) {
+      binaryContent = binaryContentRepository.save(
+          binaryContentMapper.toEntity(profileImage.get()));
+      binaryContentStorage.put(binaryContent.getId(), profileImage.get().bytes());
     }
 
     return binaryContent;

@@ -38,17 +38,14 @@ public class MessageController {
 
   @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public ResponseEntity<MessageDto> createWithAttachments(
-      @RequestPart("messageCreateRequest") MessageCreateRequest request,
+      @RequestPart("messageCreateRequest") MessageCreateRequest messageCreateRequest,
       @RequestPart(value = "attachments", required = false) List<MultipartFile> attachments
   ) {
-    MessageCreateRequest createRequest = new MessageCreateRequest(
-        request.channelId(),
-        request.authorId(),
-        request.content(),
-        toBinaryContentCreateRequests(attachments)
-    );
+    List<BinaryContentCreateRequest> attachmentRequests =
+        toBinaryContentCreateRequests(attachments);
+    MessageDto messageDto = messageService.create(messageCreateRequest, attachmentRequests);
 
-    return ResponseEntity.status(HttpStatus.CREATED).body(messageService.create(createRequest));
+    return ResponseEntity.status(HttpStatus.CREATED).body(messageDto);
   }
 
   @GetMapping
@@ -68,17 +65,16 @@ public class MessageController {
   )
   public ResponseEntity<MessageDto> updateMessage(
       @PathVariable UUID messageId,
-      @RequestPart("messageUpdateRequest") MessageUpdateRequest request,
+      @RequestPart("messageUpdateRequest") MessageUpdateRequest messageUpdateRequest,
       @RequestPart(value = "attachments", required = false) List<MultipartFile> attachments
   ) {
-    MessageUpdateRequest updateRequest = new MessageUpdateRequest(
-        request.newContent(),
-        toBinaryContentCreateRequests(attachments)
-    );
+    List<BinaryContentCreateRequest> attachmentRequests =
+        toBinaryContentCreateRequests(attachments);
 
-    messageService.update(messageId, updateRequest);
+    MessageDto messageDto = messageService.update(messageId,
+        messageUpdateRequest, attachmentRequests);
 
-    return ResponseEntity.ok(messageService.findDetailById(messageId));
+    return ResponseEntity.ok(messageDto);
   }
 
   @DeleteMapping("/{messageId}")
@@ -93,15 +89,13 @@ public class MessageController {
       List<MultipartFile> files
   ) {
     if (files == null || files.isEmpty()) {
-      return null;
+      return List.of();
     }
 
-    List<BinaryContentCreateRequest> result = files.stream()
+    return files.stream()
         .filter(file -> file != null && !file.isEmpty())
         .map(this::toBinaryContentCreateRequest)
         .toList();
-
-    return result.isEmpty() ? null : result;
   }
 
   private BinaryContentCreateRequest toBinaryContentCreateRequest(MultipartFile file) {

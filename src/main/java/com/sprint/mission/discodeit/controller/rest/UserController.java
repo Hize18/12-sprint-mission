@@ -12,6 +12,7 @@ import com.sprint.mission.discodeit.service.UserStatusService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -39,19 +40,15 @@ public class UserController {
 
   @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public ResponseEntity<UserDto> createWithImage(
-      @RequestPart("userCreateRequest") UserCreateRequest request,
+      @RequestPart("userCreateRequest") UserCreateRequest userCreateRequest,
       @RequestPart(value = "profile", required = false) MultipartFile profile
   ) {
-    BinaryContentCreateRequest profileImageRequest = toBinaryContentCreateRequest(profile);
+    Optional<BinaryContentCreateRequest> profileImageRequest = Optional.ofNullable(profile)
+        .flatMap(this::toBinaryContentCreateRequest);
 
-    UserCreateRequest createRequest = new UserCreateRequest(
-        request.username(),
-        request.email(),
-        request.password(),
-        profileImageRequest
-    );
+    UserDto createdUser = userService.create(userCreateRequest, profileImageRequest);
 
-    return ResponseEntity.status(HttpStatus.CREATED).body(userService.create(createRequest));
+    return ResponseEntity.status(HttpStatus.CREATED).body(createdUser);
   }
 
   @GetMapping
@@ -65,21 +62,14 @@ public class UserController {
   )
   public ResponseEntity<UserDto> updateUser(
       @PathVariable UUID userId,
-      @RequestPart("userUpdateRequest") UserUpdateRequest request,
+      @RequestPart("userUpdateRequest") UserUpdateRequest userUpdateRequest,
       @RequestPart(value = "profile", required = false) MultipartFile profile
   ) {
-    BinaryContentCreateRequest profileImageRequest = toBinaryContentCreateRequest(
-        profile);
+    Optional<BinaryContentCreateRequest> profileImageRequest = Optional.ofNullable(profile)
+        .flatMap(this::toBinaryContentCreateRequest);
 
-    UserUpdateRequest updateRequest = new UserUpdateRequest(
-        request.newUsername(),
-        request.newEmail(),
-        request.newPassword(),
-        profileImageRequest
-    );
-
-    userService.update(userId, updateRequest);
-    return ResponseEntity.ok(userService.findDetailById(userId));
+    UserDto updatedUser = userService.update(userId, userUpdateRequest, profileImageRequest);
+    return ResponseEntity.ok(updatedUser);
   }
 
   @DeleteMapping("/{userId}")
@@ -98,19 +88,21 @@ public class UserController {
     return ResponseEntity.ok(userStatusService.updateByUserId(userId, request));
   }
 
-  private BinaryContentCreateRequest toBinaryContentCreateRequest(MultipartFile file) {
-    if (file == null || file.isEmpty()) {
-      return null;
+  private Optional<BinaryContentCreateRequest> toBinaryContentCreateRequest(MultipartFile profile) {
+    if (profile == null || profile.isEmpty()) {
+      return Optional.empty();
     }
 
     try {
-      return new BinaryContentCreateRequest(
-          file.getOriginalFilename(),
-          file.getContentType(),
-          file.getBytes()
+      return Optional.of(
+          new BinaryContentCreateRequest(
+              profile.getOriginalFilename(),
+              profile.getContentType(),
+              profile.getBytes()
+          )
       );
     } catch (IOException e) {
-      throw new FileProcessingException("file convert error");
+      throw new FileProcessingException("profile convert error");
     }
   }
 }
