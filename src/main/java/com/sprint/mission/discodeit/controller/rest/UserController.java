@@ -17,10 +17,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -34,10 +37,7 @@ public class UserController {
   private final UserService userService;
   private final UserStatusService userStatusService;
 
-  @RequestMapping(
-      consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
-      method = RequestMethod.POST
-  )
+  @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public ResponseEntity<UserDto> createWithImage(
       @RequestPart("userCreateRequest") UserCreateRequest request,
       @RequestPart(value = "profile", required = false) MultipartFile profile
@@ -54,15 +54,14 @@ public class UserController {
     return ResponseEntity.status(HttpStatus.CREATED).body(userService.create(createRequest));
   }
 
-  @RequestMapping(method = RequestMethod.GET)
+  @GetMapping
   public ResponseEntity<List<UserDto>> findAll() {
     return ResponseEntity.ok(userService.findAllWithFetch());
   }
 
-  @RequestMapping(
+  @PatchMapping(
       value = "/{userId}",
-      consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
-      method = RequestMethod.PATCH
+      consumes = MediaType.MULTIPART_FORM_DATA_VALUE
   )
   public ResponseEntity<UserDto> updateUser(
       @PathVariable UUID userId,
@@ -83,7 +82,7 @@ public class UserController {
     return ResponseEntity.ok(userService.findDetailById(userId));
   }
 
-  @RequestMapping(value = "/{userId}", method = RequestMethod.DELETE)
+  @DeleteMapping("/{userId}")
   public ResponseEntity<Void> deleteUser(
       @PathVariable UUID userId
   ) {
@@ -91,7 +90,7 @@ public class UserController {
     return ResponseEntity.noContent().build();
   }
 
-  @RequestMapping(value = "/{userId}/userStatus", method = RequestMethod.PATCH)
+  @PatchMapping("/{userId}/userStatus")
   public ResponseEntity<UserStatusDto> userStatusUpdateByUserId(
       @PathVariable UUID userId,
       @RequestBody UserStatusUpdateRequest request

@@ -17,9 +17,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
@@ -33,10 +36,7 @@ public class MessageController {
 
   private final MessageService messageService;
 
-  @RequestMapping(
-      consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
-      method = RequestMethod.POST
-  )
+  @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public ResponseEntity<MessageDto> createWithAttachments(
       @RequestPart("messageCreateRequest") MessageCreateRequest request,
       @RequestPart(value = "attachments", required = false) List<MultipartFile> attachments
@@ -51,7 +51,7 @@ public class MessageController {
     return ResponseEntity.status(HttpStatus.CREATED).body(messageService.create(createRequest));
   }
 
-  @RequestMapping(method = RequestMethod.GET)
+  @GetMapping
   public ResponseEntity<PageResponse<MessageDto>> findAllByChannelId(
       @RequestParam UUID channelId,
       @RequestParam(required = false) Instant cursor,
@@ -62,10 +62,9 @@ public class MessageController {
     );
   }
 
-  @RequestMapping(
+  @PatchMapping(
       value = "/{messageId}",
-      consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
-      method = RequestMethod.PATCH
+      consumes = MediaType.MULTIPART_FORM_DATA_VALUE
   )
   public ResponseEntity<MessageDto> updateMessage(
       @PathVariable UUID messageId,
@@ -82,7 +81,7 @@ public class MessageController {
     return ResponseEntity.ok(messageService.findDetailById(messageId));
   }
 
-  @RequestMapping(value = "/{messageId}", method = RequestMethod.DELETE)
+  @DeleteMapping("/{messageId}")
   public ResponseEntity<Void> deleteMessage(
       @PathVariable UUID messageId
   ) {

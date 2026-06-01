@@ -9,9 +9,9 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -24,21 +24,21 @@ public class BinaryContentController {
   private final BinaryContentService binaryContentService;
   private final BinaryContentStorage binaryContentStorage;
 
-  @RequestMapping(value = "/{binaryContentId}", method = RequestMethod.GET)
+  @GetMapping("/{binaryContentId}")
   public ResponseEntity<BinaryContentDto> find(
       @PathVariable UUID binaryContentId
   ) {
     return ResponseEntity.ok(binaryContentService.findById(binaryContentId));
   }
 
-  @RequestMapping(method = RequestMethod.GET)
+  @GetMapping
   public ResponseEntity<List<BinaryContentDto>> findAllByIdIn(
       @RequestParam List<UUID> binaryContentIds
   ) {
     return ResponseEntity.ok(binaryContentService.findAllByIdIn(binaryContentIds));
   }
 
-  @RequestMapping(value = "/{binaryContentId}/download", method = RequestMethod.GET)
+  @GetMapping("/{binaryContentId}/download")
   public ResponseEntity<Resource> download(
       @PathVariable UUID binaryContentId
   ) {
