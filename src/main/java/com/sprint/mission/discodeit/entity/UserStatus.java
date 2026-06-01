@@ -1,39 +1,50 @@
 package com.sprint.mission.discodeit.entity;
 
-import java.io.Serial;
-import java.io.Serializable;
+import com.sprint.mission.discodeit.entity.base.BaseUpdatableEntity;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
 import java.time.Instant;
-import java.util.Objects;
-import java.util.UUID;
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
+import lombok.experimental.SuperBuilder;
 
+@Entity
+@Table(name = "user_statuses")
 @Getter
-public class UserStatus implements Serializable {
+@Setter
+@ToString(callSuper = true, exclude = "user")
+@SuperBuilder
+//@AllArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class UserStatus extends BaseUpdatableEntity {
 
-  @Serial
-  private static final long serialVersionUID = 1L;
-  private final UUID id;
-  private final UUID userId;
+  @OneToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "user_id", unique = true, nullable = false)
+  private User user;
+
+  @Column(name = "last_active_at", nullable = false)
   private Instant lastActiveAt;
-  private final Instant createdAt;
-  private Instant updatedAt;
 
-  public UserStatus(UUID userId, Instant lastActiveAt) {
-    this.id = UUID.randomUUID();
-    this.userId = userId;
-    this.lastActiveAt = lastActiveAt;
-    this.createdAt = Instant.now();
-    this.updatedAt = this.createdAt;
-  }
-
-  public boolean isActive() {
-    return !updatedAt.isBefore(Instant.now().minusSeconds(300));
-  }
-
-  public void update(Instant time) {
-    if (time != null && !Objects.equals(lastActiveAt, time)) {
-      lastActiveAt = time;
+  public UserStatus(User user, Instant lastActiveAt) {
+    if (user == null) {
+      throw new IllegalArgumentException("user is null.");
     }
-    this.updatedAt = time;
+    if (lastActiveAt == null) {
+      throw new IllegalArgumentException("lastActiveAt is null.");
+    }
+
+    this.user = user;
+    this.lastActiveAt = lastActiveAt;
+  }
+
+  public boolean isOnline() {
+    return !lastActiveAt.isBefore(Instant.now().minusSeconds(300));
   }
 }

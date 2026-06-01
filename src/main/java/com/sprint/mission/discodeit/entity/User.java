@@ -1,97 +1,71 @@
 package com.sprint.mission.discodeit.entity;
 
-import java.io.Serial;
-import java.io.Serializable;
-import java.time.Instant;
-import java.util.UUID;
+import com.sprint.mission.discodeit.entity.base.BaseUpdatableEntity;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
+import java.util.ArrayList;
+import java.util.List;
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
+import lombok.experimental.SuperBuilder;
 
+@Entity
+@Table(name = "users")
 @Getter
-public class User implements Serializable {
+@Setter
+@ToString(callSuper = true, exclude = {"profile", "readStatuses", "status"})
+@SuperBuilder
+//@AllArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class User extends BaseUpdatableEntity {
 
-  @Serial
-  private static final long serialVersionUID = 1L;
-  private final UUID id;
-  private UUID profileId;
+  @Column(name = "username", nullable = false, unique = true)
   private String username;
+
+  @Column(name = "email", nullable = false, unique = true)
   private String email;
+
+  @Column(name = "password", nullable = false)
   private String password;
-  private final Instant createdAt;
-  private Instant updatedAt;
 
-  public User(String username, String email, String password, UUID profileId) {
-    if (username == null) {
-      throw new IllegalArgumentException("username is null.");
-    }
-    if (email == null) {
-      throw new IllegalArgumentException("email is null.");
-    }
-    if (password == null) {
-      throw new IllegalArgumentException("password is null.");
-    }
+  //  정책상 프로필 이미지만 쓰는 것 같은데 orphan 가능할듯
+  @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.PERSIST)
+  @JoinColumn(name = "profile_id", unique = true)
+  private BinaryContent profile;
 
-    if (username.isBlank()) {
+  @OneToMany(mappedBy = "user")
+  private List<ReadStatus> readStatuses = new ArrayList<>();
+
+  @OneToOne(
+      mappedBy = "user",
+      cascade = CascadeType.ALL,
+      orphanRemoval = true
+  )
+  private UserStatus status;
+
+  public User(String username, String email, String password, BinaryContent profile) {
+    if (username == null || username.isBlank()) {
       throw new IllegalArgumentException("username is blank.");
     }
-    if (email.isBlank()) {
+    if (email == null || email.isBlank()) {
       throw new IllegalArgumentException("email is blank.");
     }
-    if (password.isBlank()) {
+    if (password == null || password.isBlank()) {
       throw new IllegalArgumentException("password is blank.");
     }
 
-    id = UUID.randomUUID();
-    this.profileId = profileId;
     this.username = username;
     this.email = email;
     this.password = password;
-    createdAt = Instant.now();
-    updatedAt = createdAt;
-  }
-
-  public User(User user) {
-    if (user == null) {
-      throw new IllegalArgumentException("User is null.");
-    }
-
-    this.id = user.getId();
-    this.profileId = user.getProfileId();
-    this.username = user.getUsername();
-    this.email = user.getEmail();
-    this.password = user.getPassword();
-    this.createdAt = user.getCreatedAt();
-    this.updatedAt = user.getUpdatedAt();
-  }
-
-  public static User copyOf(User user) {
-    return new User(user);
-  }
-
-  public void update(String username, String email, String password, UUID profileId) {
-    if (username == null) {
-      throw new IllegalArgumentException("username is null.");
-    }
-    if (email == null) {
-      throw new IllegalArgumentException("email is null.");
-    }
-    if (password == null) {
-      throw new IllegalArgumentException("password is null.");
-    }
-
-    if (username.isBlank()) {
-      throw new IllegalArgumentException("username is blank.");
-    }
-    if (email.isBlank()) {
-      throw new IllegalArgumentException("email is blank.");
-    }
-    if (password.isBlank()) {
-      throw new IllegalArgumentException("password is blank.");
-    }
-
-    this.profileId = profileId;
-    this.username = username;
-    this.email = email;
-    this.password = password;
-    updatedAt = Instant.now();
+    this.profile = profile;
   }
 }

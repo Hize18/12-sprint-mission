@@ -122,3 +122,24 @@
         - API 스펙에 없는 사용하지 않는 메서드 삭제
 
 </details>
+
+<details>
+<summary style="font-size: 20px; font-weight: bold;">Sprint 6</summary>
+
+### Sprint 6
+
+- PostgreSQL 연동을 위한 Spring Data JPA 기반 Repository 구성
+- 기존 File/JCF Repository 기반 구조를 JPA 기반 DB 연동 구조로 변경
+- 엔티티 중복 필드를 줄이기 위해 BaseEntity를 구성하고 상속 구조 적용
+- JPA 연관관계 매핑을 통해 엔티티 간 관계 정의
+- API 응답에서 Entity 직접 노출을 줄이기 위해 DTO 도입
+- BinaryContent의 bytes 데이터를 DB에 저장하지 않고 별도 Storage로 분리
+- 메시지 목록 조회에 페이징 적용
+
+- 심화
+    - N+1 완화를 위해 entitygraph 혹은 fetch join 적용
+    - 페이징 방식에서 슬라이스방식으로 변경
+    - transactional에 readonly 적용
+    - MapStruct 적용
+
+</details>

@@ -9,7 +9,6 @@ public record PrivateChannelCreateRequest(
 ) {
 
   public PrivateChannelCreateRequest {
-
     if (participantIds == null) {
       throw new IllegalArgumentException("participantIds is null.");
     }

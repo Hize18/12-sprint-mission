@@ -1,6 +1,6 @@
 package com.sprint.mission.discodeit.dto.channel;
 
-import com.sprint.mission.discodeit.entity.Channel;
+import com.sprint.mission.discodeit.dto.user.UserDto;
 import com.sprint.mission.discodeit.entity.ChannelType;
 import java.time.Instant;
 import java.util.List;
@@ -11,31 +11,29 @@ public record ChannelDto(
     ChannelType type,
     String name,
     String description,
-    Instant lastMessageAt,      // 추가
-    List<UUID> participantIds
+    Instant lastMessageAt,
+    List<UserDto> participants
 ) {
 
-  public static ChannelDto from(Channel channel) {
-    if (channel == null) {
-      throw new IllegalArgumentException("Channel is null");
+  public ChannelDto {
+    if (id == null) {
+      throw new IllegalArgumentException("id is null.");
     }
 
-    return from(channel, null, null);
-  }
-
-  public static ChannelDto from(Channel channel, Instant lastMessageAt,
-      List<UUID> participantIds) {
-    if (channel == null) {
-      throw new IllegalArgumentException("Channel is null");
+    if (type == null) {
+      throw new IllegalArgumentException("type is null.");
     }
 
-    return new ChannelDto(
-        channel.getId(),
-        channel.getType(),
-        channel.getName(),
-        "NEED_TO_IMPLEMENT_DESCRIPTION_PART",
-        lastMessageAt,
-        participantIds
-    );
+    if (type == ChannelType.PUBLIC) {
+
+      if (name == null || name.isBlank()) {
+        throw new IllegalArgumentException("name is blank.");
+      }
+      if (description == null) {
+        throw new IllegalArgumentException("description is null.");
+      }
+    }
+
+    participants = participants == null ? List.of() : List.copyOf(participants);
   }
 }

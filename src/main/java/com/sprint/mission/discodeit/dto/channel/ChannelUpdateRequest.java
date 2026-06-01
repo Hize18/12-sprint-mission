@@ -7,11 +7,11 @@ public record ChannelUpdateRequest(
 
   public ChannelUpdateRequest {
     if (newName == null) {
-      throw new IllegalArgumentException("newName is null");
+      throw new IllegalArgumentException("newName is null.");
     }
 
-    if (newName.isBlank()) {
-      throw new IllegalArgumentException("name is blank.");
+    if (newDescription == null) {
+      throw new IllegalArgumentException("newDescription is null.");
     }
   }
 }

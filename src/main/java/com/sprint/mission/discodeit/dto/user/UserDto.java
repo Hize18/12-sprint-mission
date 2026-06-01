@@ -1,32 +1,28 @@
 package com.sprint.mission.discodeit.dto.user;
 
-import com.sprint.mission.discodeit.entity.User;
-import java.time.Instant;
+import com.sprint.mission.discodeit.dto.binaryContent.BinaryContentDto;
 import java.util.UUID;
 
 public record UserDto(
     UUID id,
-    UUID profileId,
     String username,
     String email,
-    Instant createdAt,
-    Instant updatedAt,
-    boolean online
+    BinaryContentDto profile,
+    Boolean online
 ) {
 
-  public static UserDto from(User user, boolean online) {
-    if (user == null) {
-      throw new IllegalArgumentException("User is null");
+  public UserDto {
+    if (id == null) {
+      throw new IllegalArgumentException("id is null.");
     }
-
-    return new UserDto(
-        user.getId(),
-        user.getProfileId(),
-        user.getUsername(),
-        user.getEmail(),
-        user.getCreatedAt(),
-        user.getUpdatedAt(),
-        online
-    );
+    if (username == null || username.isBlank()) {
+      throw new IllegalArgumentException("username is blank.");
+    }
+    if (email == null || email.isBlank()) {
+      throw new IllegalArgumentException("email is blank.");
+    }
+    if (online == null) {
+      throw new IllegalArgumentException("online is null.");
+    }
   }
 }
