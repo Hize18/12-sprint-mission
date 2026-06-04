@@ -7,8 +7,9 @@ import com.sprint.mission.discodeit.dto.user.UserUpdateRequest;
 import com.sprint.mission.discodeit.entity.BinaryContent;
 import com.sprint.mission.discodeit.entity.User;
 import com.sprint.mission.discodeit.entity.UserStatus;
-import com.sprint.mission.discodeit.exception.DuplicateException;
-import com.sprint.mission.discodeit.exception.NotFoundException;
+import com.sprint.mission.discodeit.exception.user.EmailAlreadyExistsException;
+import com.sprint.mission.discodeit.exception.user.UserNotFoundException;
+import com.sprint.mission.discodeit.exception.user.UsernameAlreadyExistsException;
 import com.sprint.mission.discodeit.mapper.BinaryContentMapper;
 import com.sprint.mission.discodeit.mapper.UserMapper;
 import com.sprint.mission.discodeit.repository.BinaryContentRepository;
@@ -21,9 +22,11 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class BasicUserService implements UserService {
@@ -39,15 +42,15 @@ public class BasicUserService implements UserService {
   public UserDto create(UserCreateRequest userCreateRequest,
       Optional<BinaryContentCreateRequest> profileCreateRequest) {
     if (userCreateRequest == null) {
-      throw new IllegalArgumentException("user is null.");
+      throw new IllegalArgumentException("userCreateRequest is null.");
     }
 
     if (!isUniqueUsername(userCreateRequest.username())) {
-      throw new DuplicateException("username is duplicate.");
+      throw UsernameAlreadyExistsException.withUsername(userCreateRequest.username());
     }
 
     if (!isUniqueEmail(userCreateRequest.email())) {
-      throw new DuplicateException("email is duplicate.");
+      throw EmailAlreadyExistsException.withEmail(userCreateRequest.email());
     }
 
     BinaryContent binaryContent = createProfile(profileCreateRequest);
@@ -57,8 +60,14 @@ public class BasicUserService implements UserService {
     user.setStatus(userStatus);
 
     User savedUser = userRepository.save(user);
+    UserDto userDto = userMapper.toDto(savedUser);
 
-    return userMapper.toDto(savedUser);
+    log.info("사용자 생성 완료: userId={}, username={}",
+        userDto.id(),
+        userDto.username()
+    );
+
+    return userDto;
   }
 
   @Override
@@ -69,7 +78,7 @@ public class BasicUserService implements UserService {
     }
 
     User user = userRepository.findDetailById(userId)
-        .orElseThrow(() -> new NotFoundException("user not found."));
+        .orElseThrow(() -> UserNotFoundException.withUserId(userId));
 
     return userMapper.toDto(user);
   }
@@ -94,19 +103,23 @@ public class BasicUserService implements UserService {
     }
 
     User user = userRepository.findDetailById(userId)
-        .orElseThrow(() -> new NotFoundException("user not found."));
+        .orElseThrow(() -> UserNotFoundException.withUserId(userId));
+
+    String beforeUsername = user.getUsername();
+    String beforeEmail = user.getEmail();
+    boolean profileChanged = profileCreateRequest.isPresent();
 
     if (userUpdateRequest.newUsername() != null) {
       if (!Objects.equals(userUpdateRequest.newUsername(), user.getUsername())
           && !isUniqueUsername(userUpdateRequest.newUsername())) {
-        throw new DuplicateException("username is duplicate.");
+        throw UsernameAlreadyExistsException.withUsername(userUpdateRequest.newUsername());
       }
       user.setUsername(userUpdateRequest.newUsername());
     }
     if (userUpdateRequest.newEmail() != null) {
       if (!Objects.equals(userUpdateRequest.newEmail(), user.getEmail())
           && !isUniqueEmail(userUpdateRequest.newEmail())) {
-        throw new DuplicateException("email is duplicate.");
+        throw EmailAlreadyExistsException.withEmail(userUpdateRequest.newEmail());
       }
       user.setEmail(userUpdateRequest.newEmail());
     }
@@ -128,7 +141,18 @@ public class BasicUserService implements UserService {
       binaryContentRepository.delete(oldProfileImage);
     }
 
-    return userMapper.toDto(savedUser);
+    UserDto userDto = userMapper.toDto(savedUser);
+
+    log.info(
+        "사용자 수정 완료: userId={}, usernameChanged={}, emailChanged={}, passwordChanged={}, profileChanged={}",
+        userId,
+        !Objects.equals(beforeUsername, user.getUsername()),
+        !Objects.equals(beforeEmail, user.getEmail()),
+        userUpdateRequest.newPassword() != null,
+        profileChanged
+    );
+
+    return userDto;
   }
 
   @Override
@@ -139,7 +163,7 @@ public class BasicUserService implements UserService {
     }
 
     User user = userRepository.findDetailById(userId)
-        .orElseThrow(() -> new NotFoundException("user not found."));
+        .orElseThrow(() -> UserNotFoundException.withUserId(userId));
 
     BinaryContent profile = user.getProfile();
 
@@ -148,6 +172,8 @@ public class BasicUserService implements UserService {
     if (profile != null) {
       binaryContentRepository.delete(profile);
     }
+
+    log.info("사용자 삭제 완료: userId={}", userId);
   }
 
   private boolean isUniqueUsername(String username) {
@@ -169,9 +195,18 @@ public class BasicUserService implements UserService {
     BinaryContent binaryContent = null;
 
     if (profileImage.isPresent()) {
+      BinaryContentCreateRequest binaryContentCreateRequest = profileImage.get();
+
       binaryContent = binaryContentRepository.save(
-          binaryContentMapper.toEntity(profileImage.get()));
-      binaryContentStorage.put(binaryContent.getId(), profileImage.get().bytes());
+          binaryContentMapper.toEntity(binaryContentCreateRequest));
+      binaryContentStorage.put(binaryContent.getId(), binaryContentCreateRequest.bytes());
+
+      log.info(
+          "프로필 이미지 업로드 완료: binaryContentId={}, contentType={}, size={}",
+          binaryContent.getId(),
+          binaryContent.getContentType(),
+          binaryContent.getSize()
+      );
     }
 
     return binaryContent;

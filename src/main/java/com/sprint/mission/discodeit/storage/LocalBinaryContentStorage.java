@@ -1,14 +1,15 @@
 package com.sprint.mission.discodeit.storage;
 
 import com.sprint.mission.discodeit.dto.binaryContent.BinaryContentDto;
-import com.sprint.mission.discodeit.exception.FileStorageException;
-import com.sprint.mission.discodeit.exception.NotFoundException;
+import com.sprint.mission.discodeit.exception.file.BinaryContentFileNotFoundException;
+import com.sprint.mission.discodeit.exception.file.FileStorageException;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.io.InputStreamResource;
@@ -18,14 +19,15 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
+@Slf4j
 @Component
-@ConditionalOnProperty(name = "12-sprint-mission.storage.type", havingValue = "local")
+@ConditionalOnProperty(name = "discodeit.storage.type", havingValue = "local")
 public class LocalBinaryContentStorage implements BinaryContentStorage {
 
   private final Path root;
 
   public LocalBinaryContentStorage(
-      @Value("${12-sprint-mission.storage.local.root-path:local_storage}") String directory
+      @Value("${discodeit.storage.local.root-path:local_storage}") String directory
   ) {
     this.root = Path.of(directory);
   }
@@ -35,7 +37,7 @@ public class LocalBinaryContentStorage implements BinaryContentStorage {
     try {
       Files.createDirectories(root);
     } catch (IOException e) {
-      throw new IllegalStateException("Failed to initialize storage.", e);
+      throw FileStorageException.initError(root);
     }
   }
 
@@ -46,7 +48,7 @@ public class LocalBinaryContentStorage implements BinaryContentStorage {
     try {
       Files.write(path, bytes);
     } catch (IOException e) {
-      throw new FileStorageException("Failed to store binary content.");
+      throw new FileStorageException();
     }
 
     return binaryContentId;
@@ -57,21 +59,30 @@ public class LocalBinaryContentStorage implements BinaryContentStorage {
     Path path = resolvePath(binaryContentId);
 
     if (Files.notExists(path)) {
-      throw new NotFoundException("Binary content file not found.");
+      throw BinaryContentFileNotFoundException.withBinaryContentId(binaryContentId);
     }
 
     try {
       return Files.newInputStream(path);
     } catch (IOException e) {
-      throw new FileStorageException("Failed to read binary content.");
+      throw new FileStorageException();
     }
   }
 
+  //  TODO: 다운로드 완료를 로깅으로 찍고 싶으면 인터셉터를 이용하는 방법.
+//          일단은 resource 생성후 응답 완료로 처리
   @Override
   public ResponseEntity<Resource> download(BinaryContentDto binaryContentDto) {
     InputStream inputStream = get(binaryContentDto.id());
 
     Resource resource = new InputStreamResource(inputStream);
+
+    log.info(
+        "BinaryContent 응답 생성 완료: binaryContentId={}, contentType={}, size={}",
+        binaryContentDto.id(),
+        binaryContentDto.contentType(),
+        binaryContentDto.size()
+    );
 
     return ResponseEntity.ok()
         .header(
