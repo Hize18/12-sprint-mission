@@ -11,74 +11,44 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 public class GlobalExceptionHandler {
 
   @ExceptionHandler(IllegalArgumentException.class)
-  public ResponseEntity<String> handleIllegalArgument(IllegalArgumentException e) {
+  public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException e) {
     log.warn("IllegalArgumentException : {}", e.getMessage());
 
     return ResponseEntity
-        .status(HttpStatus.BAD_REQUEST)//400
-        .body(e.getMessage());
+        .status(HttpStatus.BAD_REQUEST)
+        .body(new ErrorResponse(e, 400));
   }
 
-  @ExceptionHandler(UnauthorizedException.class)
-  public ResponseEntity<String> handleUnauthorized(UnauthorizedException e) {
-    log.warn("UnauthorizedException: {}", e.getMessage());
+  @ExceptionHandler(DiscodeitException.class)
+  public ResponseEntity<ErrorResponse> handleDiscodeitException(DiscodeitException e) {
+    int status = e.getErrorCode().getStatus();
+
+    if (status >= 500) {
+      log.error("{}: message={}, details={}",
+          e.getClass().getSimpleName(),
+          e.getMessage(),
+          e.getDetails(),
+          e);
+    } else {
+      log.warn("{}: message={}, details={}",
+          e.getClass().getSimpleName(),
+          e.getMessage(),
+          e.getDetails());
+    }
 
     return ResponseEntity
-        .status(HttpStatus.UNAUTHORIZED)//401
-        .body(e.getMessage());
+        .status(HttpStatus.valueOf(status))
+        .body(new ErrorResponse(e, status)
+        );
   }
 
-  @ExceptionHandler(NotFoundException.class)
-  public ResponseEntity<String> handleNotFound(NotFoundException e) {
-    log.warn("NotFoundException: {}", e.getMessage());
-
-    return ResponseEntity
-        .status(HttpStatus.NOT_FOUND)//404
-        .body(e.getMessage());
-  }
-
-  @ExceptionHandler(IllegalStateException.class)
-  public ResponseEntity<String> handleIllegalState(IllegalStateException e) {
-    log.warn("IllegalStateException: {}", e.getMessage());
-
-    return ResponseEntity
-        .status(HttpStatus.CONFLICT)//409
-        .body(e.getMessage());
-  }
-
-  @ExceptionHandler(DuplicateException.class)
-  public ResponseEntity<String> handleDuplicate(DuplicateException e) {
-    log.warn("DuplicateException: {}", e.getMessage());
-
-    return ResponseEntity
-        .status(HttpStatus.CONFLICT)//409
-        .body(e.getMessage());
-  }
-
-  @ExceptionHandler(FileProcessingException.class)
-  public ResponseEntity<String> handleFileProcessing(FileProcessingException e) {
-    log.error("FileProcessingException", e);
-
-    return ResponseEntity
-        .status(HttpStatus.INTERNAL_SERVER_ERROR)//500
-        .body("FileProcessing Error");
-  }
-
-  @ExceptionHandler(FileStorageException.class)
-  public ResponseEntity<String> handleFileStorage(FileStorageException e) {
-    log.error("FileStorageException", e);
-
-    return ResponseEntity
-        .status(HttpStatus.INTERNAL_SERVER_ERROR)//500
-        .body("FileStorage Error");
-  }
 
   @ExceptionHandler(Exception.class)
-  public ResponseEntity<String> handleAll(Exception e) {
+  public ResponseEntity<ErrorResponse> handleAll(Exception e) {
     log.error("Internal Server Error", e);
 
     return ResponseEntity
-        .status(HttpStatus.INTERNAL_SERVER_ERROR)//500
-        .body("Internal Server Error");
+        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .body(new ErrorResponse(e, 500));
   }
 }
