@@ -1,23 +1,16 @@
 package com.sprint.mission.discodeit.dto.readStatus;
 
+import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
 import java.util.UUID;
 
 public record ReadStatusCreateRequest(
-    UUID userId,
-    UUID channelId,
+    @NotNull UUID userId,
+
+    @NotNull UUID channelId,
+
+    @NotNull
     Instant lastReadAt
 ) {
 
-  public ReadStatusCreateRequest {
-    if (userId == null) {
-      throw new IllegalArgumentException("userId is null.");
-    }
-    if (channelId == null) {
-      throw new IllegalArgumentException("channelId is null.");
-    }
-    if (lastReadAt == null) {
-      throw new IllegalArgumentException("lastReadAt is null.");
-    }
-  }
 }

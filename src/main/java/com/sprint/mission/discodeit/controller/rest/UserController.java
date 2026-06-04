@@ -10,6 +10,7 @@ import com.sprint.mission.discodeit.exception.file.FileProcessingException;
 import com.sprint.mission.discodeit.service.UserService;
 import com.sprint.mission.discodeit.service.UserStatusService;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
@@ -42,7 +43,7 @@ public class UserController {
 
   @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public ResponseEntity<UserDto> createWithImage(
-      @RequestPart("userCreateRequest") UserCreateRequest userCreateRequest,
+      @RequestPart("userCreateRequest") @Valid UserCreateRequest userCreateRequest,
       @RequestPart(value = "profile", required = false) MultipartFile profile
   ) {
     log.debug("사용자 생성 API 요청: username={}, profileIncluded={}, profileSize={}",
@@ -69,7 +70,7 @@ public class UserController {
   )
   public ResponseEntity<UserDto> updateUser(
       @PathVariable UUID userId,
-      @RequestPart("userUpdateRequest") UserUpdateRequest userUpdateRequest,
+      @RequestPart("userUpdateRequest") @Valid UserUpdateRequest userUpdateRequest,
       @RequestPart(value = "profile", required = false) MultipartFile profile
   ) {
     log.debug(
@@ -94,7 +95,7 @@ public class UserController {
       @PathVariable UUID userId
   ) {
     log.debug("사용자 삭제 API 요청: userId={}", userId);
-    
+
     userService.delete(userId);
     return ResponseEntity.noContent().build();
   }
@@ -102,7 +103,7 @@ public class UserController {
   @PatchMapping("/{userId}/userStatus")
   public ResponseEntity<UserStatusDto> userStatusUpdateByUserId(
       @PathVariable UUID userId,
-      @RequestBody UserStatusUpdateRequest request
+      @RequestBody @Valid UserStatusUpdateRequest request
   ) {
     return ResponseEntity.ok(userStatusService.updateByUserId(userId, request));
   }

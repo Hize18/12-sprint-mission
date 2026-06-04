@@ -1,23 +1,14 @@
 package com.sprint.mission.discodeit.dto.message;
 
+import jakarta.validation.constraints.NotNull;
 import java.util.UUID;
 
 public record MessageCreateRequest(
-    UUID channelId,
-    UUID authorId,
-    String content
+    @NotNull UUID channelId,
+
+    @NotNull UUID authorId,
+
+    String content//프론트에서 첨부파일 있을경우 blank가 패스됨.
 ) {
 
-  public MessageCreateRequest {
-    if (channelId == null) {
-      throw new IllegalArgumentException("channelId is null.");
-    }
-    if (authorId == null) {
-      throw new IllegalArgumentException("authorId is null.");
-    }
-
-    if (content == null) {
-      throw new IllegalArgumentException("content is null.");
-    }
-  }
 }

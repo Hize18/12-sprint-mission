@@ -8,6 +8,7 @@ import com.sprint.mission.discodeit.dto.page.PageResponse;
 import com.sprint.mission.discodeit.exception.file.FileProcessingException;
 import com.sprint.mission.discodeit.service.MessageService;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
@@ -40,7 +41,7 @@ public class MessageController {
 
   @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public ResponseEntity<MessageDto> createWithAttachments(
-      @RequestPart("messageCreateRequest") MessageCreateRequest messageCreateRequest,
+      @RequestPart("messageCreateRequest") @Valid MessageCreateRequest messageCreateRequest,
       @RequestPart(value = "attachments", required = false) List<MultipartFile> attachments
   ) {
     log.debug(
@@ -75,7 +76,7 @@ public class MessageController {
   )
   public ResponseEntity<MessageDto> updateMessage(
       @PathVariable UUID messageId,
-      @RequestPart("messageUpdateRequest") MessageUpdateRequest messageUpdateRequest,
+      @RequestPart("messageUpdateRequest") @Valid MessageUpdateRequest messageUpdateRequest,
       @RequestPart(value = "attachments", required = false) List<MultipartFile> attachments
   ) {
     log.debug("메시지 수정 API 요청: messageId={}, attachmentCount={}, totalAttachmentSize={}",

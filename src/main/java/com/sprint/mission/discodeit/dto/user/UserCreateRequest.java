@@ -1,20 +1,27 @@
 package com.sprint.mission.discodeit.dto.user;
 
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+
 public record UserCreateRequest(
+    @NotBlank
+    @Size(max = 100)
     String username,
+
+    @NotBlank
+    @Email
+    @Size(max = 100)
     String email,
+
+    @NotBlank
+    @Size(min = 8, max = 60, message = "비밀번호는 8자 이상 60자 이하여야 합니다")
+    @Pattern(
+        regexp = "^(?=.*[0-9])(?=.*[a-zA-Z])(?=.*[!@#$%^&*]).{8,}$",
+        message = "비밀번호는 숫자, 문자, 특수문자를 포함해야 합니다"
+    )
     String password
 ) {
 
-  public UserCreateRequest {
-    if (username == null || username.isBlank()) {
-      throw new IllegalArgumentException("username is blank.");
-    }
-    if (email == null || email.isBlank()) {
-      throw new IllegalArgumentException("email is blank.");
-    }
-    if (password == null || password.isBlank()) {
-      throw new IllegalArgumentException("password is blank.");
-    }
-  }
 }

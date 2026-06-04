@@ -1,12 +1,9 @@
 package com.sprint.mission.discodeit.dto.message;
 
+import jakarta.validation.constraints.NotNull;
+
 public record MessageUpdateRequest(
-    String newContent
+    @NotNull String newContent
 ) {
 
-  public MessageUpdateRequest {
-    if (newContent == null) {
-      throw new IllegalArgumentException("newContent is null.");
-    }
-  }
 }
