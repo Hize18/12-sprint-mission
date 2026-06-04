@@ -6,7 +6,7 @@ import com.sprint.mission.discodeit.dto.user.UserDto;
 import com.sprint.mission.discodeit.dto.user.UserUpdateRequest;
 import com.sprint.mission.discodeit.dto.userStatus.UserStatusDto;
 import com.sprint.mission.discodeit.dto.userStatus.UserStatusUpdateRequest;
-import com.sprint.mission.discodeit.exception.FileProcessingException;
+import com.sprint.mission.discodeit.exception.file.FileProcessingException;
 import com.sprint.mission.discodeit.service.UserService;
 import com.sprint.mission.discodeit.service.UserStatusService;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -29,6 +30,7 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+@Slf4j
 @Tag(name = "User", description = "User API")
 @RestController
 @RequestMapping("/api/users")
@@ -43,6 +45,11 @@ public class UserController {
       @RequestPart("userCreateRequest") UserCreateRequest userCreateRequest,
       @RequestPart(value = "profile", required = false) MultipartFile profile
   ) {
+    log.debug("사용자 생성 API 요청: username={}, profileIncluded={}, profileSize={}",
+        userCreateRequest.username(),
+        profile != null && !profile.isEmpty(),
+        profile == null ? 0 : profile.getSize());
+
     Optional<BinaryContentCreateRequest> profileImageRequest = Optional.ofNullable(profile)
         .flatMap(this::toBinaryContentCreateRequest);
 
@@ -65,6 +72,16 @@ public class UserController {
       @RequestPart("userUpdateRequest") UserUpdateRequest userUpdateRequest,
       @RequestPart(value = "profile", required = false) MultipartFile profile
   ) {
+    log.debug(
+        "사용자 수정 API 요청: userId={}, usernameIncluded={}, emailIncluded={}, passwordIncluded={}, profileIncluded={}, profileSize={}",
+        userId,
+        userUpdateRequest.newUsername() != null,
+        userUpdateRequest.newEmail() != null,
+        userUpdateRequest.newPassword() != null,
+        profile != null && !profile.isEmpty(),
+        profile == null ? 0 : profile.getSize()
+    );
+
     Optional<BinaryContentCreateRequest> profileImageRequest = Optional.ofNullable(profile)
         .flatMap(this::toBinaryContentCreateRequest);
 
@@ -76,6 +93,8 @@ public class UserController {
   public ResponseEntity<Void> deleteUser(
       @PathVariable UUID userId
   ) {
+    log.debug("사용자 삭제 API 요청: userId={}", userId);
+    
     userService.delete(userId);
     return ResponseEntity.noContent().build();
   }
@@ -102,7 +121,7 @@ public class UserController {
           )
       );
     } catch (IOException e) {
-      throw new FileProcessingException("profile convert error");
+      throw new FileProcessingException();
     }
   }
 }

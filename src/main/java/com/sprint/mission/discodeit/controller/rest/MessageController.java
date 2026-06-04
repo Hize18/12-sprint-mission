@@ -5,7 +5,7 @@ import com.sprint.mission.discodeit.dto.message.MessageCreateRequest;
 import com.sprint.mission.discodeit.dto.message.MessageDto;
 import com.sprint.mission.discodeit.dto.message.MessageUpdateRequest;
 import com.sprint.mission.discodeit.dto.page.PageResponse;
-import com.sprint.mission.discodeit.exception.FileProcessingException;
+import com.sprint.mission.discodeit.exception.file.FileProcessingException;
 import com.sprint.mission.discodeit.service.MessageService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.io.IOException;
@@ -13,6 +13,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -28,6 +29,7 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+@Slf4j
 @Tag(name = "Message", description = "Message API")
 @RestController
 @RequestMapping("/api/messages")
@@ -41,6 +43,14 @@ public class MessageController {
       @RequestPart("messageCreateRequest") MessageCreateRequest messageCreateRequest,
       @RequestPart(value = "attachments", required = false) List<MultipartFile> attachments
   ) {
+    log.debug(
+        "메시지 생성 API 요청: channelId={}, authorId={}, attachmentCount={}, totalAttachmentSize={}",
+        messageCreateRequest.channelId(),
+        messageCreateRequest.authorId(),
+        countFiles(attachments),
+        totalSize(attachments)
+    );
+
     List<BinaryContentCreateRequest> attachmentRequests =
         toBinaryContentCreateRequests(attachments);
     MessageDto messageDto = messageService.create(messageCreateRequest, attachmentRequests);
@@ -68,6 +78,12 @@ public class MessageController {
       @RequestPart("messageUpdateRequest") MessageUpdateRequest messageUpdateRequest,
       @RequestPart(value = "attachments", required = false) List<MultipartFile> attachments
   ) {
+    log.debug("메시지 수정 API 요청: messageId={}, attachmentCount={}, totalAttachmentSize={}",
+        messageId,
+        countFiles(attachments),
+        totalSize(attachments)
+    );
+
     List<BinaryContentCreateRequest> attachmentRequests =
         toBinaryContentCreateRequests(attachments);
 
@@ -81,6 +97,7 @@ public class MessageController {
   public ResponseEntity<Void> deleteMessage(
       @PathVariable UUID messageId
   ) {
+    log.debug("메시지 삭제 API 요청: messageId={}", messageId);
     messageService.delete(messageId);
     return ResponseEntity.noContent().build();
   }
@@ -106,7 +123,28 @@ public class MessageController {
           file.getBytes()
       );
     } catch (IOException e) {
-      throw new FileProcessingException("file convert error");
+      throw new FileProcessingException();
     }
+  }
+
+  private int countFiles(List<MultipartFile> files) {
+    if (files == null) {
+      return 0;
+    }
+
+    return (int) files.stream()
+        .filter(file -> file != null && !file.isEmpty())
+        .count();
+  }
+
+  private long totalSize(List<MultipartFile> files) {
+    if (files == null) {
+      return 0;
+    }
+
+    return files.stream()
+        .filter(file -> file != null && !file.isEmpty())
+        .mapToLong(MultipartFile::getSize)
+        .sum();
   }
 }
