@@ -143,3 +143,27 @@
     - MapStruct 적용
 
 </details>
+
+<details>
+<summary style="font-size: 20px; font-weight: bold;">Sprint 6</summary>
+
+### Sprint 7
+
+- 프로파일 기반 설정을 위한 YAML 분리
+- 주요 서비스 및 컨트롤러 레이어에 로깅 구현
+- logback을 통한 일관성 있는 로깅
+- 도메인별 커스텀 예외와 공통 예외 응답 처리를 구현
+- Dto 기반 Bean Validation 적용
+- Actuator 적용
+- TDD 기반 서비스, 슬라이스, 통합 테스트 추가
+- 멘토님의 리뷰를 참고하여 코드 수정
+    - 기존 요구사항의 RequestMapping -> 해당 method의 mapping
+    - 컨트롤러의 반환값을 인터셉터로 중복을 줄이는 부분은 추후 개선 예정
+    - 기존 sprint6의 setter는 dirty checking을 위해 유자
+
+- 심화
+    - MDC 기반 로깅을 위한 인터셉터와 Logback 패턴을 구현
+    - Spring Boot Admin 모듈 및 Actuator 기반 모니터링 연동 구성
+    - JaCoCo 기반 테스트 커버리지 리포트 생성 및 커버리지 개선
+
+</details>
