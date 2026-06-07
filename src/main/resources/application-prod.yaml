@@ -16,6 +16,11 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
+  boot:
+    admin:
+      client:
+        #        환경변수로 url 지정 필요. 일단은 기본 값 적용
+        url: ${SPRING_BOOT_ADMIN_CLIENT_URL:http://localhost:9090}
 
 server:
   port: 8080
