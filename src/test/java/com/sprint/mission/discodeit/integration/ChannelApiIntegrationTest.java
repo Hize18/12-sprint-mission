@@ -145,4 +145,15 @@ public class ChannelApiIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.size()").value(1));
   }
+
+  @Test
+  @DisplayName("find_read_statuses_by_user_id")
+  void findReadStatusesByUserId() throws Exception {
+    mockMvc.perform(get("/api/readStatuses")
+            .param("userId", userDto.id().toString()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.size()").value(1))
+        .andExpect(jsonPath("$[0].userId").value(userDto.id().toString()))
+        .andExpect(jsonPath("$[0].channelId").value(privateChannelDto.id().toString()));
+  }
 }
