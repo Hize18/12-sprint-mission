@@ -10,13 +10,12 @@ import jakarta.persistence.Table;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.AccessLevel;
+import lombok.Builder.Default;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "channels")
@@ -34,10 +33,10 @@ public class Channel extends BaseUpdatableEntity {
   private String description;
 
   @Enumerated(EnumType.STRING)
-  @JdbcTypeCode(SqlTypes.NAMED_ENUM)
   @Column(name = "type", nullable = false)
   private ChannelType type;
 
+  @Default
   @OneToMany(mappedBy = "channel")
   private List<ReadStatus> readStatuses = new ArrayList<>();
 

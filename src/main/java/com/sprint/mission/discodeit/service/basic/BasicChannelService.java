@@ -76,7 +76,9 @@ public class BasicChannelService implements ChannelService {
       throw new IllegalArgumentException("request is null.");
     }
 
-    Channel channel = new Channel(null, null, ChannelType.PRIVATE);
+    Channel channel = Channel.builder()
+        .type(ChannelType.PRIVATE)
+        .build();
     Channel savedChannel = channelRepository.save(channel);
 
     Set<UUID> requestedUserIds = new HashSet<>(request.participantIds());
