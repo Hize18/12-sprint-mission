@@ -3,11 +3,13 @@ spring:
     name: discodeit
     version: 1.7.0
   profiles:
-    active: dev
+    active: ${SPRING_PROFILES_ACTIVE:dev}
   servlet:
     multipart:
       maxFileSize: 100MB
       maxRequestSize: 300MB
+  config:
+    import: optional:dotenv:.
 
   jpa:
     hibernate:

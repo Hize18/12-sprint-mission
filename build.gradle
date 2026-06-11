@@ -44,6 +44,8 @@ dependencies {
 
     // actuator
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+    implementation "me.paulschwarz:spring-dotenv:4.0.0"
 }
 dependencyManagement {
     imports {
