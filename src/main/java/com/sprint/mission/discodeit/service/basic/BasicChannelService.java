@@ -98,7 +98,11 @@ public class BasicChannelService implements ChannelService {
     }
 
     List<ReadStatus> readStatuses = participants.stream()
-        .map(user -> new ReadStatus(user, savedChannel, savedChannel.getCreatedAt()))
+        .<ReadStatus>map(user -> ReadStatus.builder()
+            .user(user)
+            .channel(savedChannel)
+            .lastReadAt(savedChannel.getCreatedAt())
+            .build())
         .toList();
 
     readStatusRepository.saveAll(readStatuses);

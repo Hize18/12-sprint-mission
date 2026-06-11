@@ -37,7 +37,7 @@ public class LocalBinaryContentStorage implements BinaryContentStorage {
     try {
       Files.createDirectories(root);
     } catch (IOException e) {
-      throw FileStorageException.initError(root);
+      throw FileStorageException.initError(root, e);
     }
   }
 
@@ -48,7 +48,7 @@ public class LocalBinaryContentStorage implements BinaryContentStorage {
     try {
       Files.write(path, bytes);
     } catch (IOException e) {
-      throw new FileStorageException();
+      throw new FileStorageException(e);
     }
 
     return binaryContentId;
@@ -65,7 +65,7 @@ public class LocalBinaryContentStorage implements BinaryContentStorage {
     try {
       return Files.newInputStream(path);
     } catch (IOException e) {
-      throw new FileStorageException();
+      throw new FileStorageException(e);
     }
   }
 

@@ -122,7 +122,7 @@ public class UserController {
           )
       );
     } catch (IOException e) {
-      throw new FileProcessingException();
+      throw new FileProcessingException(e);
     }
   }
 }

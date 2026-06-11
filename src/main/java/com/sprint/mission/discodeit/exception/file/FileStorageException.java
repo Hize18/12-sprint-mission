@@ -9,8 +9,12 @@ public class FileStorageException extends FileException {
     super(ErrorCode.FILE_STORAGE_ERROR);
   }
 
-  public static FileStorageException initError(Path path) {
-    FileStorageException ex = new FileStorageException();
+  public FileStorageException(Throwable cause) {
+    super(ErrorCode.FILE_STORAGE_ERROR, cause);
+  }
+
+  public static FileStorageException initError(Path path, Throwable cause) {
+    FileStorageException ex = new FileStorageException(cause);
     ex.addDetail("rootPath", path);
     return ex;
   }

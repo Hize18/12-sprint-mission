@@ -39,7 +39,10 @@ public class BasicUserStatusService implements UserStatusService {
       throw UserStatusAlreadyExistsException.withUserId(user.getId());
     }
 
-    UserStatus usrStatus = new UserStatus(user, request.lastActiveAt());
+    UserStatus usrStatus = UserStatus.builder()
+        .user(user)
+        .lastActiveAt(request.lastActiveAt())
+        .build();
     return userStatusMapper.toDto(userStatusRepository.save(usrStatus));
   }
 
