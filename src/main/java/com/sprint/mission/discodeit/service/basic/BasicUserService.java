@@ -56,7 +56,10 @@ public class BasicUserService implements UserService {
     BinaryContent binaryContent = createProfile(profileCreateRequest);
 
     User user = userMapper.toEntity(userCreateRequest, binaryContent);
-    UserStatus userStatus = new UserStatus(user, Instant.now());
+    UserStatus userStatus = UserStatus.builder()
+        .user(user)
+        .lastActiveAt(Instant.now())
+        .build();
     user.setStatus(userStatus);
 
     User savedUser = userRepository.save(user);
