@@ -8,4 +8,8 @@ public class FileException extends DiscodeitException {
   public FileException(ErrorCode errorCode) {
     super(errorCode);
   }
+
+  public FileException(ErrorCode errorCode, Throwable cause) {
+    super(errorCode, cause);
+  }
 }

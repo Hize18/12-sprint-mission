@@ -36,10 +36,6 @@ logging:
   level:
     root: info
 
-    # Spring Web
-    org.springframework.web: trace
-    org.springframework.web.filter.CommonsRequestLoggingFilter: DEBUG
-
 management:
   endpoints:
     web:

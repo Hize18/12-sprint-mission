@@ -40,3 +40,5 @@ data/
 data_repo/
 local_storage/
 .logs/
+
+.env

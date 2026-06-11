@@ -50,7 +50,7 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(MethodArgumentNotValidException.class)
   public ResponseEntity<ErrorResponse> handleValidationException(
       MethodArgumentNotValidException e) {
-    log.error("요청 유효성 검사 실패 : {}", e.getMessage());
+    log.warn("요청 유효성 검사 실패 : {}", e.getMessage());
 
     Map<String, Object> validationErrors = new LinkedHashMap<>();
     e.getBindingResult().getAllErrors().forEach(error -> {
@@ -74,8 +74,17 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ErrorResponse> handleAll(Exception e) {
     log.error("Internal Server Error", e);
 
+    ErrorResponse response = new ErrorResponse(
+        Instant.now(),
+        "INTERNAL_SERVER_ERROR",
+        "내부 서버 오류가 발생했습니다",
+        Map.of(),
+        "Internal Server Error",
+        HttpStatus.INTERNAL_SERVER_ERROR.value()//500
+    );
+
     return ResponseEntity
         .status(HttpStatus.INTERNAL_SERVER_ERROR)
-        .body(new ErrorResponse(e, 500));
+        .body(response);
   }
 }
