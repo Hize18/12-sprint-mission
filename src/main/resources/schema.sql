@@ -5,9 +5,6 @@ DROP TABLE IF EXISTS messages;
 DROP TABLE IF EXISTS users;
 DROP TABLE IF EXISTS channels;
 DROP TABLE IF EXISTS binary_contents;
-DROP TYPE IF EXISTS channel_type;
-
-CREATE TYPE channel_type AS ENUM ('PUBLIC', 'PRIVATE');
 
 CREATE TABLE binary_contents
 (
@@ -25,7 +22,7 @@ CREATE TABLE channels
 	updated_at  TIMESTAMP WITH TIME ZONE NULL,
 	name        varchar(100)             NULL,
 	description varchar(500)             NULL,
-	type        channel_type             NOT NULL
+	type        varchar(20)              NOT NULL
 );
 
 CREATE TABLE users
