@@ -87,7 +87,8 @@ public class S3BinaryContentStorage implements BinaryContentStorage {
         .location(URI.create(presignedUrl))
         .build();
   }
-  
+
+  @Override
   public void delete(UUID binaryContentId) {
     String key = resolveKey(binaryContentId);
 

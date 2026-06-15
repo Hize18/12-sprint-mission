@@ -97,6 +97,17 @@ public class LocalBinaryContentStorage implements BinaryContentStorage {
         .body(resource);
   }
 
+  @Override
+  public void delete(UUID binaryContentId) {
+    Path path = resolvePath(binaryContentId);
+
+    try {
+      Files.deleteIfExists(path);
+    } catch (IOException e) {
+      throw new FileStorageException(e);
+    }
+  }
+
   public Path resolvePath(UUID binaryContentId) {
     return root.resolve(binaryContentId.toString());
   }
