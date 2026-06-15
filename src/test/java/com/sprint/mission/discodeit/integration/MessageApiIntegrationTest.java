@@ -170,6 +170,79 @@ public class MessageApiIntegrationTest {
   }
 
   @Test
+  @DisplayName("update_message_with_attachments")
+  void updateMessage_with_attachments() throws Exception {
+    MessageCreateRequest beforeMessageCreateRequest = new MessageCreateRequest(
+        channelDto.id(),
+        userDto.id(),
+        "content"
+    );
+
+    MockMultipartFile beforeMessageCreateRequestPart = new MockMultipartFile(
+        "messageCreateRequest",
+        "",
+        "application/json",
+        objectMapper.writeValueAsBytes(beforeMessageCreateRequest)
+    );
+
+    MockMultipartFile attachments = new MockMultipartFile(
+        "attachments",
+        "before_attachments.png",
+        "image/png",
+        "before_attachments".getBytes()
+    );
+
+    String createResponse = mockMvc.perform(multipart("/api/messages")
+            .file(beforeMessageCreateRequestPart)
+            .file(attachments))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.content").value(beforeMessageCreateRequest.content()))
+        .andExpect(jsonPath("$.channelId").value(beforeMessageCreateRequest.channelId().toString()))
+        .andExpect(jsonPath("$.author.id").value(beforeMessageCreateRequest.authorId().toString()))
+        .andExpect(jsonPath("$.attachments[0].fileName").value(attachments.getOriginalFilename()))
+        .andExpect(jsonPath("$.attachments[0].size").value(attachments.getSize()))
+        .andExpect(jsonPath("$.attachments[0].contentType").value(attachments.getContentType()))
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
+
+    MessageDto beforeMessageDto = objectMapper.readValue(createResponse, MessageDto.class);
+
+    MessageUpdateRequest messageUpdateRequest = new MessageUpdateRequest(
+        "newContent"
+    );
+
+    MockMultipartFile messageUpdateRequestPart = new MockMultipartFile(
+        "messageUpdateRequest",
+        "",
+        "application/json",
+        objectMapper.writeValueAsBytes(messageUpdateRequest)
+    );
+
+    MockMultipartFile upAttachments = new MockMultipartFile(
+        "attachments",
+        "after_attachments.txt",
+        "text/plain",
+        "after_attachments".getBytes()
+    );
+
+    mockMvc.perform(multipart("/api/messages/{messageId}", beforeMessageDto.id())
+            .file(messageUpdateRequestPart)
+            .file(upAttachments)
+            .with(request -> {
+              request.setMethod("PATCH");
+              return request;
+            }))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.id").value(beforeMessageDto.id().toString()))
+        .andExpect(jsonPath("$.content").value(messageUpdateRequest.newContent()))
+        .andExpect(jsonPath("$.attachments.size()").value(1))
+        .andExpect(jsonPath("$.attachments[0].fileName").value(upAttachments.getOriginalFilename()))
+        .andExpect(jsonPath("$.attachments[0].contentType").value(upAttachments.getContentType()))
+        .andExpect(jsonPath("$.attachments[0].size").value(upAttachments.getBytes().length));
+  }
+
+  @Test
   @DisplayName("delete_message")
   void deleteMessage() throws Exception {
     mockMvc.perform(get("/api/messages")

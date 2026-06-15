@@ -75,6 +75,7 @@ public class BasicBinaryContentService implements BinaryContentService {
     if (!binaryContentRepository.existsById(binaryContentId)) {
       throw BinaryContentNotFoundException.withBinaryContentId(binaryContentId);
     }
+    binaryContentStorage.delete(binaryContentId);
     binaryContentRepository.deleteById(binaryContentId);
   }
 }

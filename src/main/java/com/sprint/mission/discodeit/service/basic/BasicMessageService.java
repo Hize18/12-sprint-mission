@@ -138,13 +138,19 @@ public class BasicMessageService implements MessageService {
 
     message.setContent(messageUpdateRequest.newContent());
 
+    List<BinaryContent> oldAttachments = List.of();
+
     if (!attachmentRequests.isEmpty()) {
+      oldAttachments = new ArrayList<>(message.getAttachments());
+
       List<BinaryContent> attachments = createAttachments(attachmentRequests);
-      message.setAttachments(attachments);
+      message.updateAttachments(attachments);
     }
 
     Message updatedMessage = messageRepository.save(message);
     MessageDto messageDto = messageMapper.toDto(updatedMessage);
+
+    oldAttachments.forEach(oldAttachment -> binaryContentStorage.delete(oldAttachment.getId()));
 
     log.info("메시지 업데이트 완료: messageId={}, attachmentCount={}",
         messageDto.id(),
@@ -161,11 +167,15 @@ public class BasicMessageService implements MessageService {
       throw new IllegalArgumentException("messageId is null.");
     }
 
-    Message message = messageRepository.findById(messageId)
+    Message message = messageRepository.findDetailById(messageId)
         .orElseThrow(() -> MessageNotFoundException.withMessageId(messageId));
 
+    List<BinaryContent> attachments = message.getAttachments();
+
+    attachments.forEach(oldAttachment -> binaryContentStorage.delete(oldAttachment.getId()));
+
     messageRepository.delete(message);
-    
+
     log.info("메시지 삭제 완료: messageId={}", messageId);
   }
 

@@ -261,7 +261,7 @@ public class MessageServiceMockTest {
   @Test
   @DisplayName("message_delete_success")
   void message_delete_success() {
-    given(messageRepository.findById(any())).willReturn(Optional.of(message));
+    given(messageRepository.findDetailById(any())).willReturn(Optional.of(message));
 
     messageService.delete(messageId);
 
@@ -271,7 +271,7 @@ public class MessageServiceMockTest {
   @Test
   @DisplayName("message_delete_failed")
   void message_delete_failed() {
-    given(messageRepository.findById(any())).willReturn(Optional.empty());
+    given(messageRepository.findDetailById(any())).willReturn(Optional.empty());
 
     assertThatThrownBy(() -> messageService.delete(messageId))
         .isInstanceOf(MessageNotFoundException.class);

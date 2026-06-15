@@ -72,4 +72,13 @@ public class Message extends BaseUpdatableEntity {
     this.attachments = new ArrayList<>(List.copyOf(attachments));
     this.content = content;
   }
+
+  public void updateAttachments(List<BinaryContent> attachments) {
+    if (attachments == null) {
+      throw new IllegalArgumentException("attachments is null.");
+    }
+    
+    this.attachments.clear();
+    this.attachments.addAll(attachments);
+  }
 }

@@ -141,6 +141,7 @@ public class BasicUserService implements UserService {
 
     User savedUser = userRepository.save(user);
     if (oldProfileImage != null) {
+      binaryContentStorage.delete(oldProfileImage.getId());
       binaryContentRepository.delete(oldProfileImage);
     }
 
@@ -173,6 +174,7 @@ public class BasicUserService implements UserService {
     userRepository.delete(user);
 
     if (profile != null) {
+      binaryContentStorage.delete(profile.getId());
       binaryContentRepository.delete(profile);
     }
 
