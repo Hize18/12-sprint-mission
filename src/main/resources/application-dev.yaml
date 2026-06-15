@@ -30,9 +30,3 @@ logging:
 
     org.springframework.web: debug
     org.springframework.web.filter.CommonsRequestLoggingFilter: DEBUG
-
-discodeit:
-  storage:
-    local:
-      root-path: local_storage
-    type: local

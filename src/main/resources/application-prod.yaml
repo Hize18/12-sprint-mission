@@ -37,9 +37,3 @@ logging:
     org.hibernate.SQL: off
     org.hibernate.orm.jdbc.bind: off
     org.springframework.web: info
-
-discodeit:
-  storage:
-    local:
-      root-path: local_storage
-    type: local
