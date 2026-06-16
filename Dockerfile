@@ -1,4 +1,5 @@
-FROM amazoncorretto:17 AS builder
+FROM --platform=$BUILDPLATFORM amazoncorretto:17 AS builder
+#https://docs.docker.com/build/building/multi-platform/
 
 WORKDIR /app
 
