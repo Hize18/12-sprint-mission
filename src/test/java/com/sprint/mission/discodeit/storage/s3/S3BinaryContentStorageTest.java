@@ -25,7 +25,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 
 @SpringBootTest(properties = "discodeit.storage.type=s3")
-@ActiveProfiles("dev")
+@ActiveProfiles("test")
 public class S3BinaryContentStorageTest {
 
   @Autowired
