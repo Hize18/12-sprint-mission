@@ -6,9 +6,13 @@ on:
       - release
   workflow_dispatch:
 
+#https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+#Node 20 is being deprecated.
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
       - name: Checkout
@@ -40,6 +44,8 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: build-and-push
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
       - name: Setting AWS CLI
