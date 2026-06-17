@@ -8,6 +8,8 @@ WORKDIR /app
 COPY gradle ./gradle
 COPY gradlew ./gradlew
 
+RUN chmod +x ./gradlew
+
 COPY build.gradle settings.gradle ./
 
 RUN ./gradlew dependencies
