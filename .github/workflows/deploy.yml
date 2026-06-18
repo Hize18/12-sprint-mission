@@ -55,8 +55,8 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_KEY }}
           aws-region: ${{ vars.AWS_REGION }}
 
-      #      https://docs.aws.amazon.com/cli/latest/reference/ecs/
-      #      https://github.com/aws-actions/amazon-ecs-deploy-task-definition
+      #https://docs.aws.amazon.com/cli/latest/reference/ecs/
+      #https://github.com/aws-actions/amazon-ecs-deploy-task-definition
       - name: Update ECS Task Definition
         run: |
           ECR_URI="${{ vars.ECR_REPOSITORY_URI }}"
@@ -89,6 +89,13 @@ jobs:
             --cluster "${{ vars.ECS_CLUSTER }}" \
             --service "${{ vars.ECS_SERVICE }}" \
             --desired-count 0
+
+      #현재 ecs가 롤링 업데이트를 쓰고 있지만 기존 태스크를 내리기 위해서 사용
+      - name: Waiting for ECS Service stable
+        run: |
+          aws ecs wait services-stable \
+            --cluster "${{ vars.ECS_CLUSTER }}" \
+            --services "${{ vars.ECS_SERVICE }}"
 
       - name: Update ECS Service
         run: |
