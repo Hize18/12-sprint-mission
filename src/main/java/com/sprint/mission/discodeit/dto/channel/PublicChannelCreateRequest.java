@@ -1,16 +1,16 @@
 package com.sprint.mission.discodeit.dto.channel;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
 public record PublicChannelCreateRequest(
+    @NotBlank
+    @Size(max = 100)
     String name,
+
+    @NotNull
     String description
 ) {
 
-  public PublicChannelCreateRequest {
-    if (name == null || name.isBlank()) {
-      throw new IllegalArgumentException("name is blank.");
-    }
-    if (description == null) {
-      throw new IllegalArgumentException("description is null.");
-    }
-  }
 }

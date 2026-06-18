@@ -10,20 +10,4 @@ public record ReadStatusDto(
     Instant lastReadAt
 ) {
 
-  public ReadStatusDto {
-    if (id == null) {
-      throw new IllegalArgumentException("id is null.");
-    }
-
-    if (userId == null) {
-      throw new IllegalArgumentException("userId is null.");
-    }
-
-    if (channelId == null) {
-      throw new IllegalArgumentException("channelId is null.");
-    }
-    if (lastReadAt == null) {
-      throw new IllegalArgumentException("lastReadAt is null.");
-    }
-  }
 }

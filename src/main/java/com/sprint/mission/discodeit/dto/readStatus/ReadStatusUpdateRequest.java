@@ -1,14 +1,10 @@
 package com.sprint.mission.discodeit.dto.readStatus;
 
+import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
 
 public record ReadStatusUpdateRequest(
-    Instant newLastReadAt
+    @NotNull Instant newLastReadAt
 ) {
 
-  public ReadStatusUpdateRequest {
-    if (newLastReadAt == null) {
-      throw new IllegalArgumentException("newLastReadAt is null.");
-    }
-  }
 }

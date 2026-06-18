@@ -1,8 +1,13 @@
 package com.sprint.mission.discodeit.exception;
 
+import java.time.Instant;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -11,74 +16,75 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 public class GlobalExceptionHandler {
 
   @ExceptionHandler(IllegalArgumentException.class)
-  public ResponseEntity<String> handleIllegalArgument(IllegalArgumentException e) {
+  public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException e) {
     log.warn("IllegalArgumentException : {}", e.getMessage());
 
     return ResponseEntity
-        .status(HttpStatus.BAD_REQUEST)//400
-        .body(e.getMessage());
+        .status(HttpStatus.BAD_REQUEST)
+        .body(new ErrorResponse(e, 400));
   }
 
-  @ExceptionHandler(UnauthorizedException.class)
-  public ResponseEntity<String> handleUnauthorized(UnauthorizedException e) {
-    log.warn("UnauthorizedException: {}", e.getMessage());
+  @ExceptionHandler(DiscodeitException.class)
+  public ResponseEntity<ErrorResponse> handleDiscodeitException(DiscodeitException e) {
+    int status = e.getErrorCode().getStatus();
+
+    if (status >= 500) {
+      log.error("{}: message={}, details={}",
+          e.getClass().getSimpleName(),
+          e.getMessage(),
+          e.getDetails(),
+          e);
+    } else {
+      log.warn("{}: message={}, details={}",
+          e.getClass().getSimpleName(),
+          e.getMessage(),
+          e.getDetails());
+    }
 
     return ResponseEntity
-        .status(HttpStatus.UNAUTHORIZED)//401
-        .body(e.getMessage());
+        .status(HttpStatus.valueOf(status))
+        .body(new ErrorResponse(e, status)
+        );
   }
 
-  @ExceptionHandler(NotFoundException.class)
-  public ResponseEntity<String> handleNotFound(NotFoundException e) {
-    log.warn("NotFoundException: {}", e.getMessage());
+  @ExceptionHandler(MethodArgumentNotValidException.class)
+  public ResponseEntity<ErrorResponse> handleValidationException(
+      MethodArgumentNotValidException e) {
+    log.warn("요청 유효성 검사 실패 : {}", e.getMessage());
 
-    return ResponseEntity
-        .status(HttpStatus.NOT_FOUND)//404
-        .body(e.getMessage());
-  }
+    Map<String, Object> validationErrors = new LinkedHashMap<>();
+    e.getBindingResult().getAllErrors().forEach(error -> {
+      String fieldName = ((FieldError) error).getField();
+      String errorMeString = error.getDefaultMessage();
+      validationErrors.put(fieldName, errorMeString);
+    });
 
-  @ExceptionHandler(IllegalStateException.class)
-  public ResponseEntity<String> handleIllegalState(IllegalStateException e) {
-    log.warn("IllegalStateException: {}", e.getMessage());
-
-    return ResponseEntity
-        .status(HttpStatus.CONFLICT)//409
-        .body(e.getMessage());
-  }
-
-  @ExceptionHandler(DuplicateException.class)
-  public ResponseEntity<String> handleDuplicate(DuplicateException e) {
-    log.warn("DuplicateException: {}", e.getMessage());
-
-    return ResponseEntity
-        .status(HttpStatus.CONFLICT)//409
-        .body(e.getMessage());
-  }
-
-  @ExceptionHandler(FileProcessingException.class)
-  public ResponseEntity<String> handleFileProcessing(FileProcessingException e) {
-    log.error("FileProcessingException", e);
-
-    return ResponseEntity
-        .status(HttpStatus.INTERNAL_SERVER_ERROR)//500
-        .body("FileProcessing Error");
-  }
-
-  @ExceptionHandler(FileStorageException.class)
-  public ResponseEntity<String> handleFileStorage(FileStorageException e) {
-    log.error("FileStorageException", e);
-
-    return ResponseEntity
-        .status(HttpStatus.INTERNAL_SERVER_ERROR)//500
-        .body("FileStorage Error");
+    ErrorResponse response = new ErrorResponse(
+        Instant.now(),
+        "VALIDATION_ERROR",
+        "요청 데이터 유효성 검사에 실패하였습니다.",
+        validationErrors,
+        e.getClass().getSimpleName(),
+        HttpStatus.BAD_REQUEST.value()
+    );
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
   }
 
   @ExceptionHandler(Exception.class)
-  public ResponseEntity<String> handleAll(Exception e) {
+  public ResponseEntity<ErrorResponse> handleAll(Exception e) {
     log.error("Internal Server Error", e);
 
+    ErrorResponse response = new ErrorResponse(
+        Instant.now(),
+        "INTERNAL_SERVER_ERROR",
+        "내부 서버 오류가 발생했습니다",
+        Map.of(),
+        "Internal Server Error",
+        HttpStatus.INTERNAL_SERVER_ERROR.value()//500
+    );
+
     return ResponseEntity
-        .status(HttpStatus.INTERNAL_SERVER_ERROR)//500
-        .body("Internal Server Error");
+        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .body(response);
   }
 }

@@ -1,20 +1,17 @@
 package com.sprint.mission.discodeit.dto.binaryContent;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
 public record BinaryContentCreateRequest(
-    String fileName,
-    String contentType,
+    @NotBlank String fileName,
+
+    @NotBlank String contentType,
+
+    @NotNull
+    @Size(min = 1)
     byte[] bytes
 ) {
 
-  public BinaryContentCreateRequest {
-    if (fileName == null || fileName.isBlank()) {
-      throw new IllegalArgumentException("fileName is blank.");
-    }
-    if (contentType == null || contentType.isBlank()) {
-      throw new IllegalArgumentException("contentType is blank.");
-    }
-    if (bytes == null || bytes.length == 0) {
-      throw new IllegalArgumentException("data is empty.");
-    }
-  }
 }

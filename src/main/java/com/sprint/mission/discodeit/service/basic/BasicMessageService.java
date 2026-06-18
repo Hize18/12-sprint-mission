@@ -9,7 +9,9 @@ import com.sprint.mission.discodeit.entity.BinaryContent;
 import com.sprint.mission.discodeit.entity.Channel;
 import com.sprint.mission.discodeit.entity.Message;
 import com.sprint.mission.discodeit.entity.User;
-import com.sprint.mission.discodeit.exception.NotFoundException;
+import com.sprint.mission.discodeit.exception.channel.ChannelNotFoundException;
+import com.sprint.mission.discodeit.exception.message.MessageNotFoundException;
+import com.sprint.mission.discodeit.exception.user.UserNotFoundException;
 import com.sprint.mission.discodeit.mapper.BinaryContentMapper;
 import com.sprint.mission.discodeit.mapper.MessageMapper;
 import com.sprint.mission.discodeit.mapper.PageResponseMapper;
@@ -26,11 +28,13 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class BasicMessageService implements MessageService {
@@ -46,21 +50,35 @@ public class BasicMessageService implements MessageService {
 
   @Override
   @Transactional
-  public MessageDto create(MessageCreateRequest request) {
-    if (request == null) {
+  public MessageDto create(MessageCreateRequest messageCreateRequest,
+      List<BinaryContentCreateRequest> attachmentRequests) {
+    if (messageCreateRequest == null) {
       throw new IllegalArgumentException("message is null.");
     }
 
-    Channel channel = channelRepository.findById(request.channelId())
-        .orElseThrow(() -> new NotFoundException("channel not found."));
+    Channel channel = channelRepository.findById(messageCreateRequest.channelId())
+        .orElseThrow(() ->
+            ChannelNotFoundException.withChannelId(messageCreateRequest.channelId())
+        );
 
-    User author = userRepository.findDetailById(request.authorId())
-        .orElseThrow(() -> new NotFoundException("user not found."));
+    User author = userRepository.findDetailById(messageCreateRequest.authorId())
+        .orElseThrow(() ->
+            UserNotFoundException.withUserId(messageCreateRequest.authorId())
+        );
 
-    List<BinaryContent> attachments = createAttachments(request.attachmentList());
+    List<BinaryContent> attachments = createAttachments(attachmentRequests);
 
-    Message message = messageMapper.toEntity(request, channel, author, attachments);
-    return messageMapper.toDto(messageRepository.save(message));
+    Message message = messageMapper.toEntity(messageCreateRequest, channel, author, attachments);
+    MessageDto messageDto = messageMapper.toDto(messageRepository.save(message));
+
+    log.info("메시지 생성 완료: messageId={}, channelId={}, authorId={}, attachmentCount={}",
+        messageDto.id(),
+        messageDto.channelId(),
+        messageCreateRequest.authorId(),
+        messageDto.attachments().size()
+    );
+
+    return messageDto;
   }
 
   @Override
@@ -71,7 +89,7 @@ public class BasicMessageService implements MessageService {
     }
 
     Message message = messageRepository.findDetailById(messageId)
-        .orElseThrow(() -> new NotFoundException("message not found."));
+        .orElseThrow(() -> MessageNotFoundException.withMessageId(messageId));
     return messageMapper.toDto(message);
   }
 
@@ -106,25 +124,34 @@ public class BasicMessageService implements MessageService {
 
   @Override
   @Transactional
-  public MessageDto update(UUID messageId, MessageUpdateRequest request) {
+  public MessageDto update(UUID messageId, MessageUpdateRequest messageUpdateRequest,
+      List<BinaryContentCreateRequest> attachmentRequests) {
     if (messageId == null) {
       throw new IllegalArgumentException("messageId is null.");
     }
-    if (request == null) {
+    if (messageUpdateRequest == null) {
       throw new IllegalArgumentException("messageRequest is null.");
     }
 
     Message message = messageRepository.findDetailById(messageId)
-        .orElseThrow(() -> new NotFoundException("message not found."));
+        .orElseThrow(() -> MessageNotFoundException.withMessageId(messageId));
 
-    message.setContent(request.newContent());
+    message.setContent(messageUpdateRequest.newContent());
 
-    if (!request.attachmentList().isEmpty()) {
-      List<BinaryContent> attachments = createAttachments(request.attachmentList());
+    if (!attachmentRequests.isEmpty()) {
+      List<BinaryContent> attachments = createAttachments(attachmentRequests);
       message.setAttachments(attachments);
     }
 
-    return messageMapper.toDto(message);
+    Message updatedMessage = messageRepository.save(message);
+    MessageDto messageDto = messageMapper.toDto(updatedMessage);
+
+    log.info("메시지 업데이트 완료: messageId={}, attachmentCount={}",
+        messageDto.id(),
+        messageDto.attachments().size()
+    );
+
+    return messageDto;
   }
 
   @Override
@@ -135,9 +162,11 @@ public class BasicMessageService implements MessageService {
     }
 
     Message message = messageRepository.findById(messageId)
-        .orElseThrow(() -> new NotFoundException("message not found."));
+        .orElseThrow(() -> MessageNotFoundException.withMessageId(messageId));
 
     messageRepository.delete(message);
+    
+    log.info("메시지 삭제 완료: messageId={}", messageId);
   }
 
   private List<BinaryContent> createAttachments(
@@ -152,9 +181,17 @@ public class BasicMessageService implements MessageService {
       if (attachmentRequest == null) {
         throw new IllegalArgumentException("attachmentRequest is null.");
       }
+
       BinaryContent binaryContent = binaryContentRepository.save(
           binaryContentMapper.toEntity(attachmentRequest));
       binaryContentStorage.put(binaryContent.getId(), attachmentRequest.bytes());
+
+      log.info(
+          "메시지 첨부파일 업로드 완료: binaryContentId={}, contentType={}, size={}",
+          binaryContent.getId(),
+          binaryContent.getContentType(),
+          binaryContent.getSize()
+      );
       attachments.add(binaryContent);
     }
 

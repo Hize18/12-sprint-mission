@@ -10,8 +10,10 @@ import com.sprint.mission.discodeit.entity.ChannelType;
 import com.sprint.mission.discodeit.entity.Message;
 import com.sprint.mission.discodeit.entity.ReadStatus;
 import com.sprint.mission.discodeit.entity.User;
-import com.sprint.mission.discodeit.exception.DuplicateException;
-import com.sprint.mission.discodeit.exception.NotFoundException;
+import com.sprint.mission.discodeit.exception.channel.ChannelNameAlreadyExistsException;
+import com.sprint.mission.discodeit.exception.channel.ChannelNotFoundException;
+import com.sprint.mission.discodeit.exception.channel.PrivateChannelUpdateNotAllowedException;
+import com.sprint.mission.discodeit.exception.user.UserNotFoundException;
 import com.sprint.mission.discodeit.mapper.ChannelMapper;
 import com.sprint.mission.discodeit.mapper.UserMapper;
 import com.sprint.mission.discodeit.repository.ChannelRepository;
@@ -21,14 +23,19 @@ import com.sprint.mission.discodeit.repository.UserRepository;
 import com.sprint.mission.discodeit.service.ChannelService;
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class BasicChannelService implements ChannelService {
@@ -48,11 +55,18 @@ public class BasicChannelService implements ChannelService {
     }
 
     if (!isUniqueName(request.name())) {
-      throw new DuplicateException("name is duplicate.");
+      throw ChannelNameAlreadyExistsException.withChannelName(request.name());
     }
 
     Channel channel = channelMapper.toEntity(request);
-    return toDto(channelRepository.save(channel));
+    Channel savedChannel = channelRepository.save(channel);
+
+    log.info("public 채널 생성 완료: channelId={}, name={}",
+        savedChannel.getId(),
+        savedChannel.getName()
+    );
+
+    return toDto(savedChannel);
   }
 
   @Override
@@ -62,19 +76,41 @@ public class BasicChannelService implements ChannelService {
       throw new IllegalArgumentException("request is null.");
     }
 
-    Channel channel = new Channel(null, null, ChannelType.PRIVATE);
+    Channel channel = Channel.builder()
+        .type(ChannelType.PRIVATE)
+        .build();
     Channel savedChannel = channelRepository.save(channel);
 
-    List<User> participants = userRepository.findAllById(request.participantIds());
-    if (participants.size() != request.participantIds().size()) {
-      throw new NotFoundException("user not found.");
+    Set<UUID> requestedUserIds = new HashSet<>(request.participantIds());
+
+    List<User> participants = userRepository.findAllById(requestedUserIds);
+
+    Set<UUID> foundUserIds = participants.stream()
+        .map(User::getId)
+        .collect(Collectors.toSet());
+
+    List<UUID> missingUserIds = requestedUserIds.stream()
+        .filter(userId -> !foundUserIds.contains(userId))
+        .toList();
+
+    if (!missingUserIds.isEmpty()) {
+      throw UserNotFoundException.withUserIds(missingUserIds);
     }
 
     List<ReadStatus> readStatuses = participants.stream()
-        .map(user -> new ReadStatus(user, savedChannel, savedChannel.getCreatedAt()))
+        .<ReadStatus>map(user -> ReadStatus.builder()
+            .user(user)
+            .channel(savedChannel)
+            .lastReadAt(savedChannel.getCreatedAt())
+            .build())
         .toList();
 
     readStatusRepository.saveAll(readStatuses);
+
+    log.info("private 채널 생성 완료: channelId={}, participantCount={}",
+        savedChannel.getId(),
+        participants.size()
+    );
 
     return toDto(savedChannel);
   }
@@ -87,7 +123,7 @@ public class BasicChannelService implements ChannelService {
     }
 
     Channel channel = channelRepository.findById(channelId)
-        .orElseThrow(() -> new NotFoundException("channel not found."));
+        .orElseThrow(() -> ChannelNotFoundException.withChannelId(channelId));
     return toDto(channel);
   }
 
@@ -135,20 +171,33 @@ public class BasicChannelService implements ChannelService {
     }
 
     Channel channel = channelRepository.findById(channelId)
-        .orElseThrow(() -> new NotFoundException("channel not found."));
+        .orElseThrow(() -> ChannelNotFoundException.withChannelId(channelId));
 
     if (channel.getType() == ChannelType.PRIVATE) {
-      throw new IllegalStateException("private channel cannot be updated.");
+      throw PrivateChannelUpdateNotAllowedException.withChannelId(channelId);
     }
 
     if (!Objects.equals(channel.getName(), request.newName())
         && !isUniqueName(request.newName())) {
-      throw new DuplicateException("name is duplicate.");
+      throw ChannelNameAlreadyExistsException.withChannelName(request.newName());
     }
+
+    String beforeName = channel.getName();
+    String beforeDescription = channel.getDescription();
 
     channel.setName(request.newName());
     channel.setDescription(request.newDescription());
-    return toDto(channel);
+
+    Channel updatedChannel = channelRepository.save(channel);
+    ChannelDto channelDto = toDto(updatedChannel);
+
+    log.info("채널 업데이트 완료: channelId={}, nameChanged={}, descriptionChanged={}",
+        channelId,
+        !Objects.equals(beforeName, request.newName()),
+        !Objects.equals(beforeDescription, request.newDescription())
+    );
+
+    return channelDto;
   }
 
   @Override
@@ -159,9 +208,11 @@ public class BasicChannelService implements ChannelService {
     }
 
     Channel channel = channelRepository.findById(channelId)
-        .orElseThrow(() -> new NotFoundException("channel not found."));
+        .orElseThrow(() -> ChannelNotFoundException.withChannelId(channelId));
 
     channelRepository.delete(channel);
+
+    log.info("채널 삭제 완료: channelId={}", channelId);
   }
 
   private boolean isUniqueName(String name) {

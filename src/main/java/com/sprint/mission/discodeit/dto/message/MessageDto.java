@@ -15,23 +15,5 @@ public record MessageDto(
     UserDto author,
     List<BinaryContentDto> attachments
 ) {
-
-  public MessageDto {
-    if (id == null) {
-      throw new IllegalArgumentException("id is null.");
-    }
-
-    if (channelId == null) {
-      throw new IllegalArgumentException("channelId is null.");
-    }
-
-    if (content == null) {
-      throw new IllegalArgumentException("content is null.");
-    }
-//    author은 nullable
-
-    if (attachments == null) {
-      throw new IllegalArgumentException("attachments is null.");
-    }
-  }
+  
 }
