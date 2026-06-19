@@ -1,14 +1,10 @@
 package com.sprint.mission.discodeit.dto.userStatus;
 
+import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
 
 public record UserStatusUpdateRequest(
-    Instant newLastActiveAt
+    @NotNull Instant newLastActiveAt
 ) {
 
-  public UserStatusUpdateRequest {
-    if (newLastActiveAt == null) {
-      throw new IllegalArgumentException("newLastActiveAt is null.");
-    }
-  }
 }

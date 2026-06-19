@@ -1,16 +1,13 @@
-12-sprint-mission:
-  storage:
-    local:
-      root-path: local_storage
-    type: local
-
 spring:
-  sql:
-    init:
-      mode: never
   config:
     activate:
       on-profile: prod
+
+  datasource:
+    url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
@@ -19,6 +16,14 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
+  boot:
+    admin:
+      client:
+        #        환경변수로 url 지정 필요. 일단은 기본 값 적용
+        url: ${SPRING_BOOT_ADMIN_CLIENT_URL:http://localhost:9090}
+
+server:
+  port: 8080
 
 springdoc:
   swagger-ui:
@@ -28,6 +33,13 @@ springdoc:
 
 logging:
   level:
+    com.sprint.mission.discodeit: info
     org.hibernate.SQL: off
     org.hibernate.orm.jdbc.bind: off
     org.springframework.web: info
+
+discodeit:
+  storage:
+    local:
+      root-path: local_storage
+    type: local

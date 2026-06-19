@@ -9,16 +9,4 @@ public record UserStatusDto(
     Instant lastActiveAt
 ) {
 
-  public UserStatusDto {
-    if (id == null) {
-      throw new IllegalArgumentException("id is null.");
-    }
-
-    if (userId == null) {
-      throw new IllegalArgumentException("userId is null.");
-    }
-    if (lastActiveAt == null) {
-      throw new IllegalArgumentException("lastActiveAt is null.");
-    }
-  }
 }

@@ -5,26 +5,32 @@ import com.sprint.mission.discodeit.dto.message.MessageCreateRequest;
 import com.sprint.mission.discodeit.dto.message.MessageDto;
 import com.sprint.mission.discodeit.dto.message.MessageUpdateRequest;
 import com.sprint.mission.discodeit.dto.page.PageResponse;
-import com.sprint.mission.discodeit.exception.FileProcessingException;
+import com.sprint.mission.discodeit.exception.file.FileProcessingException;
 import com.sprint.mission.discodeit.service.MessageService;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+@Slf4j
 @Tag(name = "Message", description = "Message API")
 @RestController
 @RequestMapping("/api/messages")
@@ -33,25 +39,27 @@ public class MessageController {
 
   private final MessageService messageService;
 
-  @RequestMapping(
-      consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
-      method = RequestMethod.POST
-  )
+  @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public ResponseEntity<MessageDto> createWithAttachments(
-      @RequestPart("messageCreateRequest") MessageCreateRequest request,
+      @RequestPart("messageCreateRequest") @Valid MessageCreateRequest messageCreateRequest,
       @RequestPart(value = "attachments", required = false) List<MultipartFile> attachments
   ) {
-    MessageCreateRequest createRequest = new MessageCreateRequest(
-        request.channelId(),
-        request.authorId(),
-        request.content(),
-        toBinaryContentCreateRequests(attachments)
+    log.debug(
+        "메시지 생성 API 요청: channelId={}, authorId={}, attachmentCount={}, totalAttachmentSize={}",
+        messageCreateRequest.channelId(),
+        messageCreateRequest.authorId(),
+        countFiles(attachments),
+        totalSize(attachments)
     );
 
-    return ResponseEntity.status(HttpStatus.CREATED).body(messageService.create(createRequest));
+    List<BinaryContentCreateRequest> attachmentRequests =
+        toBinaryContentCreateRequests(attachments);
+    MessageDto messageDto = messageService.create(messageCreateRequest, attachmentRequests);
+
+    return ResponseEntity.status(HttpStatus.CREATED).body(messageDto);
   }
 
-  @RequestMapping(method = RequestMethod.GET)
+  @GetMapping
   public ResponseEntity<PageResponse<MessageDto>> findAllByChannelId(
       @RequestParam UUID channelId,
       @RequestParam(required = false) Instant cursor,
@@ -62,30 +70,35 @@ public class MessageController {
     );
   }
 
-  @RequestMapping(
+  @PatchMapping(
       value = "/{messageId}",
-      consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
-      method = RequestMethod.PATCH
+      consumes = MediaType.MULTIPART_FORM_DATA_VALUE
   )
   public ResponseEntity<MessageDto> updateMessage(
       @PathVariable UUID messageId,
-      @RequestPart("messageUpdateRequest") MessageUpdateRequest request,
+      @RequestPart("messageUpdateRequest") @Valid MessageUpdateRequest messageUpdateRequest,
       @RequestPart(value = "attachments", required = false) List<MultipartFile> attachments
   ) {
-    MessageUpdateRequest updateRequest = new MessageUpdateRequest(
-        request.newContent(),
-        toBinaryContentCreateRequests(attachments)
+    log.debug("메시지 수정 API 요청: messageId={}, attachmentCount={}, totalAttachmentSize={}",
+        messageId,
+        countFiles(attachments),
+        totalSize(attachments)
     );
 
-    messageService.update(messageId, updateRequest);
+    List<BinaryContentCreateRequest> attachmentRequests =
+        toBinaryContentCreateRequests(attachments);
 
-    return ResponseEntity.ok(messageService.findDetailById(messageId));
+    MessageDto messageDto = messageService.update(messageId,
+        messageUpdateRequest, attachmentRequests);
+
+    return ResponseEntity.ok(messageDto);
   }
 
-  @RequestMapping(value = "/{messageId}", method = RequestMethod.DELETE)
+  @DeleteMapping("/{messageId}")
   public ResponseEntity<Void> deleteMessage(
       @PathVariable UUID messageId
   ) {
+    log.debug("메시지 삭제 API 요청: messageId={}", messageId);
     messageService.delete(messageId);
     return ResponseEntity.noContent().build();
   }
@@ -94,15 +107,13 @@ public class MessageController {
       List<MultipartFile> files
   ) {
     if (files == null || files.isEmpty()) {
-      return null;
+      return List.of();
     }
 
-    List<BinaryContentCreateRequest> result = files.stream()
+    return files.stream()
         .filter(file -> file != null && !file.isEmpty())
         .map(this::toBinaryContentCreateRequest)
         .toList();
-
-    return result.isEmpty() ? null : result;
   }
 
   private BinaryContentCreateRequest toBinaryContentCreateRequest(MultipartFile file) {
@@ -113,7 +124,28 @@ public class MessageController {
           file.getBytes()
       );
     } catch (IOException e) {
-      throw new FileProcessingException("file convert error");
+      throw new FileProcessingException(e);
     }
+  }
+
+  private int countFiles(List<MultipartFile> files) {
+    if (files == null) {
+      return 0;
+    }
+
+    return (int) files.stream()
+        .filter(file -> file != null && !file.isEmpty())
+        .count();
+  }
+
+  private long totalSize(List<MultipartFile> files) {
+    if (files == null) {
+      return 0;
+    }
+
+    return files.stream()
+        .filter(file -> file != null && !file.isEmpty())
+        .mapToLong(MultipartFile::getSize)
+        .sum();
   }
 }

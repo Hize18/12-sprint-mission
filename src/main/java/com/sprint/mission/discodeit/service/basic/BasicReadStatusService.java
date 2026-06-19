@@ -6,8 +6,10 @@ import com.sprint.mission.discodeit.dto.readStatus.ReadStatusUpdateRequest;
 import com.sprint.mission.discodeit.entity.Channel;
 import com.sprint.mission.discodeit.entity.ReadStatus;
 import com.sprint.mission.discodeit.entity.User;
-import com.sprint.mission.discodeit.exception.DuplicateException;
-import com.sprint.mission.discodeit.exception.NotFoundException;
+import com.sprint.mission.discodeit.exception.channel.ChannelNotFoundException;
+import com.sprint.mission.discodeit.exception.readstatus.ReadStatusAlreadyExistsException;
+import com.sprint.mission.discodeit.exception.readstatus.ReadStatusNotFoundException;
+import com.sprint.mission.discodeit.exception.user.UserNotFoundException;
 import com.sprint.mission.discodeit.mapper.ReadStatusMapper;
 import com.sprint.mission.discodeit.repository.ChannelRepository;
 import com.sprint.mission.discodeit.repository.ReadStatusRepository;
@@ -36,14 +38,17 @@ public class BasicReadStatusService implements ReadStatusService {
     }
 
     if (readStatusRepository.existsByUserIdAndChannelId(request.userId(), request.channelId())) {
-      throw new DuplicateException("readStatus already exist.");
+      throw ReadStatusAlreadyExistsException.withUserIdAndChannelId(
+          request.userId(),
+          request.channelId()
+      );
     }
 
     User user = userRepository.findById(request.userId())
-        .orElseThrow(() -> new NotFoundException("user not found"));
+        .orElseThrow(() -> UserNotFoundException.withUserId(request.userId()));
 
     Channel channel = channelRepository.findById(request.channelId())
-        .orElseThrow(() -> new NotFoundException("channel not found"));
+        .orElseThrow(() -> ChannelNotFoundException.withChannelId(request.channelId()));
 
     ReadStatus readStatus = readStatusMapper.toEntity(request, user, channel);
     return readStatusMapper.toDto(readStatusRepository.save(readStatus));
@@ -57,7 +62,7 @@ public class BasicReadStatusService implements ReadStatusService {
     }
 
     ReadStatus readStatus = readStatusRepository.findById(readStatusId)
-        .orElseThrow(() -> new NotFoundException("readStatus not found."));
+        .orElseThrow(() -> ReadStatusNotFoundException.withReadStatusId(readStatusId));
     return readStatusMapper.toDto(readStatus);
   }
 
@@ -84,7 +89,7 @@ public class BasicReadStatusService implements ReadStatusService {
     }
 
     ReadStatus readStatus = readStatusRepository.findById(readStatusId)
-        .orElseThrow(() -> new NotFoundException("readStatus not found."));
+        .orElseThrow(() -> ReadStatusNotFoundException.withReadStatusId(readStatusId));
 
 //    굳이 update가 필요한지, 시간을 현재가 아니라 임의의 시간을 하려고?
     readStatus.setLastReadAt(request.newLastReadAt());
@@ -99,7 +104,7 @@ public class BasicReadStatusService implements ReadStatusService {
     }
 
     ReadStatus readStatus = readStatusRepository.findById(readStatusId)
-        .orElseThrow(() -> new NotFoundException("readStatus not found."));
+        .orElseThrow(() -> ReadStatusNotFoundException.withReadStatusId(readStatusId));
 
     readStatusRepository.delete(readStatus);
   }

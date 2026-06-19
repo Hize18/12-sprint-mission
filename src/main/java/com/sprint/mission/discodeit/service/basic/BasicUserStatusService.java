@@ -5,8 +5,9 @@ import com.sprint.mission.discodeit.dto.userStatus.UserStatusDto;
 import com.sprint.mission.discodeit.dto.userStatus.UserStatusUpdateRequest;
 import com.sprint.mission.discodeit.entity.User;
 import com.sprint.mission.discodeit.entity.UserStatus;
-import com.sprint.mission.discodeit.exception.DuplicateException;
-import com.sprint.mission.discodeit.exception.NotFoundException;
+import com.sprint.mission.discodeit.exception.user.UserNotFoundException;
+import com.sprint.mission.discodeit.exception.userstatus.UserStatusAlreadyExistsException;
+import com.sprint.mission.discodeit.exception.userstatus.UserStatusNotFoundException;
 import com.sprint.mission.discodeit.mapper.UserStatusMapper;
 import com.sprint.mission.discodeit.repository.UserRepository;
 import com.sprint.mission.discodeit.repository.UserStatusRepository;
@@ -32,13 +33,16 @@ public class BasicUserStatusService implements UserStatusService {
     }
 
     User user = userRepository.findById(request.userId())
-        .orElseThrow(() -> new NotFoundException("user not found."));
+        .orElseThrow(() -> UserNotFoundException.withUserId(request.userId()));
 
     if (userStatusRepository.existsByUserId(user.getId())) {
-      throw new DuplicateException("userStatus already exists.");
+      throw UserStatusAlreadyExistsException.withUserId(user.getId());
     }
 
-    UserStatus usrStatus = new UserStatus(user, request.lastActiveAt());
+    UserStatus usrStatus = UserStatus.builder()
+        .user(user)
+        .lastActiveAt(request.lastActiveAt())
+        .build();
     return userStatusMapper.toDto(userStatusRepository.save(usrStatus));
   }
 
@@ -50,7 +54,7 @@ public class BasicUserStatusService implements UserStatusService {
     }
 
     UserStatus userStatus = userStatusRepository.findById(userStatusId)
-        .orElseThrow(() -> new NotFoundException("userStatus not found."));
+        .orElseThrow(() -> UserStatusNotFoundException.withUserStatusId(userStatusId));
 
     return userStatusMapper.toDto(userStatus);
   }
@@ -66,7 +70,7 @@ public class BasicUserStatusService implements UserStatusService {
     }
 
     UserStatus userStatus = userStatusRepository.findById(userStatusId)
-        .orElseThrow(() -> new NotFoundException("userStatus not found."));
+        .orElseThrow(() -> UserStatusNotFoundException.withUserStatusId(userStatusId));
 
     userStatus.setLastActiveAt(request.newLastActiveAt());
     return userStatusMapper.toDto(userStatus);
@@ -83,7 +87,7 @@ public class BasicUserStatusService implements UserStatusService {
     }
 
     UserStatus userStatus = userStatusRepository.findByUserId(userId)
-        .orElseThrow(() -> new NotFoundException("userStatus not found."));
+        .orElseThrow(() -> UserStatusNotFoundException.withUserStatusId(userId));
 
     userStatus.setLastActiveAt(request.newLastActiveAt());
     return userStatusMapper.toDto(userStatus);
@@ -97,7 +101,7 @@ public class BasicUserStatusService implements UserStatusService {
     }
 
     UserStatus userStatus = userStatusRepository.findById(userStatusId)
-        .orElseThrow(() -> new NotFoundException("userStatus not found."));
+        .orElseThrow(() -> UserStatusNotFoundException.withUserStatusId(userStatusId));
 
     userStatusRepository.delete(userStatus);
   }

@@ -7,8 +7,9 @@ import com.sprint.mission.discodeit.dto.user.UserUpdateRequest;
 import com.sprint.mission.discodeit.entity.BinaryContent;
 import com.sprint.mission.discodeit.entity.User;
 import com.sprint.mission.discodeit.entity.UserStatus;
-import com.sprint.mission.discodeit.exception.DuplicateException;
-import com.sprint.mission.discodeit.exception.NotFoundException;
+import com.sprint.mission.discodeit.exception.user.EmailAlreadyExistsException;
+import com.sprint.mission.discodeit.exception.user.UserNotFoundException;
+import com.sprint.mission.discodeit.exception.user.UsernameAlreadyExistsException;
 import com.sprint.mission.discodeit.mapper.BinaryContentMapper;
 import com.sprint.mission.discodeit.mapper.UserMapper;
 import com.sprint.mission.discodeit.repository.BinaryContentRepository;
@@ -18,11 +19,14 @@ import com.sprint.mission.discodeit.storage.BinaryContentStorage;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class BasicUserService implements UserService {
@@ -35,28 +39,38 @@ public class BasicUserService implements UserService {
 
   @Override
   @Transactional
-  public UserDto create(UserCreateRequest request) {
-    if (request == null) {
-      throw new IllegalArgumentException("user is null.");
+  public UserDto create(UserCreateRequest userCreateRequest,
+      Optional<BinaryContentCreateRequest> profileCreateRequest) {
+    if (userCreateRequest == null) {
+      throw new IllegalArgumentException("userCreateRequest is null.");
     }
 
-    if (!isUniqueUsername(request.username())) {
-      throw new DuplicateException("username is duplicate.");
+    if (!isUniqueUsername(userCreateRequest.username())) {
+      throw UsernameAlreadyExistsException.withUsername(userCreateRequest.username());
     }
 
-    if (!isUniqueEmail(request.email())) {
-      throw new DuplicateException("email is duplicate.");
+    if (!isUniqueEmail(userCreateRequest.email())) {
+      throw EmailAlreadyExistsException.withEmail(userCreateRequest.email());
     }
 
-    BinaryContent binaryContent = createProfile(request.profileImage());
+    BinaryContent binaryContent = createProfile(profileCreateRequest);
 
-    User user = userMapper.toEntity(request, binaryContent);
-    UserStatus userStatus = new UserStatus(user, Instant.now());
+    User user = userMapper.toEntity(userCreateRequest, binaryContent);
+    UserStatus userStatus = UserStatus.builder()
+        .user(user)
+        .lastActiveAt(Instant.now())
+        .build();
     user.setStatus(userStatus);
 
     User savedUser = userRepository.save(user);
+    UserDto userDto = userMapper.toDto(savedUser);
 
-    return userMapper.toDto(savedUser);
+    log.info("사용자 생성 완료: userId={}, username={}",
+        userDto.id(),
+        userDto.username()
+    );
+
+    return userDto;
   }
 
   @Override
@@ -67,7 +81,7 @@ public class BasicUserService implements UserService {
     }
 
     User user = userRepository.findDetailById(userId)
-        .orElseThrow(() -> new NotFoundException("user not found."));
+        .orElseThrow(() -> UserNotFoundException.withUserId(userId));
 
     return userMapper.toDto(user);
   }
@@ -82,41 +96,46 @@ public class BasicUserService implements UserService {
 
   @Override
   @Transactional
-  public UserDto update(UUID userId, UserUpdateRequest request) {
+  public UserDto update(UUID userId, UserUpdateRequest userUpdateRequest,
+      Optional<BinaryContentCreateRequest> profileCreateRequest) {
     if (userId == null) {
       throw new IllegalArgumentException("userId is null.");
     }
-    if (request == null) {
+    if (userUpdateRequest == null) {
       throw new IllegalArgumentException("userUpdateRequest is null.");
     }
 
     User user = userRepository.findDetailById(userId)
-        .orElseThrow(() -> new NotFoundException("user not found."));
+        .orElseThrow(() -> UserNotFoundException.withUserId(userId));
 
-    if (request.newUsername() != null) {
-      if (!Objects.equals(request.newUsername(), user.getUsername())
-          && !isUniqueUsername(request.newUsername())) {
-        throw new DuplicateException("username is duplicate.");
+    String beforeUsername = user.getUsername();
+    String beforeEmail = user.getEmail();
+    boolean profileChanged = profileCreateRequest.isPresent();
+
+    if (userUpdateRequest.newUsername() != null) {
+      if (!Objects.equals(userUpdateRequest.newUsername(), user.getUsername())
+          && !isUniqueUsername(userUpdateRequest.newUsername())) {
+        throw UsernameAlreadyExistsException.withUsername(userUpdateRequest.newUsername());
       }
-      user.setUsername(request.newUsername());
+      user.setUsername(userUpdateRequest.newUsername());
     }
-    if (request.newEmail() != null) {
-      if (!Objects.equals(request.newEmail(), user.getEmail())
-          && !isUniqueEmail(request.newEmail())) {
-        throw new DuplicateException("email is duplicate.");
+    if (userUpdateRequest.newEmail() != null) {
+      if (!Objects.equals(userUpdateRequest.newEmail(), user.getEmail())
+          && !isUniqueEmail(userUpdateRequest.newEmail())) {
+        throw EmailAlreadyExistsException.withEmail(userUpdateRequest.newEmail());
       }
-      user.setEmail(request.newEmail());
+      user.setEmail(userUpdateRequest.newEmail());
     }
 
-    if (request.newPassword() != null) {
-      user.setPassword(request.newPassword());
+    if (userUpdateRequest.newPassword() != null) {
+      user.setPassword(userUpdateRequest.newPassword());
     }
 
     BinaryContent oldProfileImage = null;
-    if (request.profileImage() != null) {
+    if (profileCreateRequest.isPresent()) {
       oldProfileImage = user.getProfile();
 
-      BinaryContent newProfileImage = createProfile(request.profileImage());
+      BinaryContent newProfileImage = createProfile(profileCreateRequest);
       user.setProfile(newProfileImage);
     }
 
@@ -125,7 +144,18 @@ public class BasicUserService implements UserService {
       binaryContentRepository.delete(oldProfileImage);
     }
 
-    return userMapper.toDto(savedUser);
+    UserDto userDto = userMapper.toDto(savedUser);
+
+    log.info(
+        "사용자 수정 완료: userId={}, usernameChanged={}, emailChanged={}, passwordChanged={}, profileChanged={}",
+        userId,
+        !Objects.equals(beforeUsername, user.getUsername()),
+        !Objects.equals(beforeEmail, user.getEmail()),
+        userUpdateRequest.newPassword() != null,
+        profileChanged
+    );
+
+    return userDto;
   }
 
   @Override
@@ -136,7 +166,7 @@ public class BasicUserService implements UserService {
     }
 
     User user = userRepository.findDetailById(userId)
-        .orElseThrow(() -> new NotFoundException("user not found."));
+        .orElseThrow(() -> UserNotFoundException.withUserId(userId));
 
     BinaryContent profile = user.getProfile();
 
@@ -145,6 +175,8 @@ public class BasicUserService implements UserService {
     if (profile != null) {
       binaryContentRepository.delete(profile);
     }
+
+    log.info("사용자 삭제 완료: userId={}", userId);
   }
 
   private boolean isUniqueUsername(String username) {
@@ -162,12 +194,22 @@ public class BasicUserService implements UserService {
     return !userRepository.existsByEmail(email);
   }
 
-  private BinaryContent createProfile(BinaryContentCreateRequest profileImage) {
+  private BinaryContent createProfile(Optional<BinaryContentCreateRequest> profileImage) {
     BinaryContent binaryContent = null;
 
-    if (profileImage != null) {
-      binaryContent = binaryContentRepository.save(binaryContentMapper.toEntity(profileImage));
-      binaryContentStorage.put(binaryContent.getId(), profileImage.bytes());
+    if (profileImage.isPresent()) {
+      BinaryContentCreateRequest binaryContentCreateRequest = profileImage.get();
+
+      binaryContent = binaryContentRepository.save(
+          binaryContentMapper.toEntity(binaryContentCreateRequest));
+      binaryContentStorage.put(binaryContent.getId(), binaryContentCreateRequest.bytes());
+
+      log.info(
+          "프로필 이미지 업로드 완료: binaryContentId={}, contentType={}, size={}",
+          binaryContent.getId(),
+          binaryContent.getContentType(),
+          binaryContent.getSize()
+      );
     }
 
     return binaryContent;
