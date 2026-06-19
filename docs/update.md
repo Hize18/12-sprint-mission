@@ -167,3 +167,32 @@
     - JaCoCo 기반 테스트 커버리지 리포트 생성 및 커버리지 개선
 
 </details>
+
+<details>
+<summary style="font-size: 20px; font-weight: bold;">Sprint 8</summary>
+
+### Sprint 8
+
+- Docker 기반 애플리케이션 실행 환경 구성
+- Docker Compose를 통해 애플리케이션과 db 컨테이너를 올려 테스트 환경 구축
+- AWS S3를 통한 클라우드 storage 구축
+- AWS RDS를 통한 DB 구축
+- EC2에 SSH 접근을 통한 RDS 접근 및 DB 설정
+- 퍼블릭 ECR 구성
+- ECS 구성
+    - 클러스터 -> 태스크 정의 -> 서비스 생성
+    - 태스크 인바운드 규칙 설정
+
+- 심화
+    - 멀티 스테이지를 활용하여 이미지 크기 감소
+      ```aiignore
+      # 런타임 x                         | 1.4gb
+      # 런타임 amazoncorretto:17         | 850mb
+      # 런타임 amazoncorretto:17-al2023  | 830mb
+      # 런타임 amazoncorretto:17-alpine  | 600mb
+      ```
+    - Github Actions를 통한 CI/CD 구축
+    - CI로 테스트 코드 실행을 한 후 CodeCov로 커버리지 체크
+    - CD를 통해 이미지를 빌드하고 해당 이미지로 서비스 업데이트
+
+</details>
