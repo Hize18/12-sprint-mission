@@ -179,7 +179,11 @@ public class MessageServiceMockTest {
 
     verify(messageRepository, times(1)).save(message);
     verify(binaryContentStorage, times(1))
-        .put(eq(attachment.getId()), any(byte[].class));
+        .put(
+            eq(attachment.getId()),
+            any(byte[].class),
+            eq(attachmentCreateRequest.contentType())
+        );
   }
 
   @Test

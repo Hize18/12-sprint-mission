@@ -25,6 +25,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Slf4j
 @Service
@@ -141,8 +143,9 @@ public class BasicUserService implements UserService {
 
     User savedUser = userRepository.save(user);
     if (oldProfileImage != null) {
-      binaryContentStorage.delete(oldProfileImage.getId());
+      UUID oldProfileImageId = oldProfileImage.getId();
       binaryContentRepository.delete(oldProfileImage);
+      deleteBinaryContentAfterCommit(oldProfileImageId);
     }
 
     UserDto userDto = userMapper.toDto(savedUser);
@@ -174,8 +177,9 @@ public class BasicUserService implements UserService {
     userRepository.delete(user);
 
     if (profile != null) {
-      binaryContentStorage.delete(profile.getId());
+      UUID profileId = profile.getId();
       binaryContentRepository.delete(profile);
+      deleteBinaryContentAfterCommit(profileId);
     }
 
     log.info("사용자 삭제 완료: userId={}", userId);
@@ -204,7 +208,11 @@ public class BasicUserService implements UserService {
 
       binaryContent = binaryContentRepository.save(
           binaryContentMapper.toEntity(binaryContentCreateRequest));
-      binaryContentStorage.put(binaryContent.getId(), binaryContentCreateRequest.bytes());
+      binaryContentStorage.put(
+          binaryContent.getId(),
+          binaryContentCreateRequest.bytes(),
+          binaryContent.getContentType()
+      );
 
       log.info(
           "프로필 이미지 업로드 완료: binaryContentId={}, contentType={}, size={}",
@@ -215,5 +223,21 @@ public class BasicUserService implements UserService {
     }
 
     return binaryContent;
+  }
+
+  private void deleteBinaryContentAfterCommit(UUID binaryContentId) {
+    if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+      binaryContentStorage.delete(binaryContentId);
+      return;
+    }
+
+    TransactionSynchronizationManager.registerSynchronization(
+        new TransactionSynchronization() {
+          @Override
+          public void afterCommit() {
+            binaryContentStorage.delete(binaryContentId);
+          }
+        }
+    );
   }
 }

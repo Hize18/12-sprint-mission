@@ -28,7 +28,7 @@ services:
       - discodeit_storage:/app/.discodeit/storage
 
   db:
-    image: postgres:16
+    image: postgres:17
     container_name: discodeit-db
     environment:
       POSTGRES_DB: ${DB_NAME}

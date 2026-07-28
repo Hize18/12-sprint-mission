@@ -30,6 +30,7 @@ public class LocalBinaryContentStorageTest {
   private LocalBinaryContentStorage binaryContentStorage;
   private UUID id;
   private byte[] bytes;
+  private String contentType;
 
   @BeforeEach
   void setUp() {
@@ -37,6 +38,7 @@ public class LocalBinaryContentStorageTest {
     binaryContentStorage.init();
     id = UUID.randomUUID();
     bytes = "test".getBytes(StandardCharsets.UTF_8);
+    contentType = "text/plain";
   }
 
   @Test
@@ -65,7 +67,7 @@ public class LocalBinaryContentStorageTest {
   @Test
   @DisplayName("put_and_get_success")
   void putAndGet_success() throws IOException {
-    UUID binaryContentId = binaryContentStorage.put(id, bytes);
+    UUID binaryContentId = binaryContentStorage.put(id, bytes, contentType);
 
     assertThat(binaryContentId).isEqualTo(id);
     assertThat(binaryContentStorage.resolvePath(id)).exists();
@@ -78,7 +80,7 @@ public class LocalBinaryContentStorageTest {
     Path directoryPath = binaryContentStorage.resolvePath(id);
     Files.createDirectories(directoryPath);
 
-    assertThatThrownBy(() -> binaryContentStorage.put(id, bytes))
+    assertThatThrownBy(() -> binaryContentStorage.put(id, bytes, contentType))
         .isInstanceOf(FileStorageException.class);
   }
 
@@ -92,7 +94,7 @@ public class LocalBinaryContentStorageTest {
   @Test
   @DisplayName("download_success")
   void download_success() throws IOException {
-    binaryContentStorage.put(id, bytes);
+    binaryContentStorage.put(id, bytes, contentType);
     BinaryContentDto binaryContentDto = new BinaryContentDto(
         id,
         "test.txt",
@@ -116,7 +118,7 @@ public class LocalBinaryContentStorageTest {
   @Test
   @DisplayName("delete_success")
   void delete_success() {
-    binaryContentStorage.put(id, bytes);
+    binaryContentStorage.put(id, bytes, contentType);
 
     binaryContentStorage.delete(id);
 

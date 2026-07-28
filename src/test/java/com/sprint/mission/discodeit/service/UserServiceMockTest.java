@@ -142,7 +142,11 @@ public class UserServiceMockTest {
 
     verify(userRepository, times(1)).save(user);
     verify(binaryContentStorage, times(1))
-        .put(eq(profile.getId()), aryEq(binaryContentCreateRequest.bytes()));
+        .put(
+            eq(profile.getId()),
+            aryEq(binaryContentCreateRequest.bytes()),
+            eq(binaryContentCreateRequest.contentType())
+        );
   }
 
   @Test

@@ -33,6 +33,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Slf4j
 @Service
@@ -138,10 +140,12 @@ public class BasicMessageService implements MessageService {
 
     message.setContent(messageUpdateRequest.newContent());
 
-    List<BinaryContent> oldAttachments = List.of();
+    List<UUID> oldAttachmentIds = List.of();
 
     if (!attachmentRequests.isEmpty()) {
-      oldAttachments = new ArrayList<>(message.getAttachments());
+      oldAttachmentIds = message.getAttachments().stream()
+          .map(BinaryContent::getId)
+          .toList();
 
       List<BinaryContent> attachments = createAttachments(attachmentRequests);
       message.updateAttachments(attachments);
@@ -150,7 +154,10 @@ public class BasicMessageService implements MessageService {
     Message updatedMessage = messageRepository.save(message);
     MessageDto messageDto = messageMapper.toDto(updatedMessage);
 
-    oldAttachments.forEach(oldAttachment -> binaryContentStorage.delete(oldAttachment.getId()));
+    if (!oldAttachmentIds.isEmpty()) {
+      List<UUID> deleteOldAttachmentIds = oldAttachmentIds;
+      deleteBinaryContentsAfterCommit(deleteOldAttachmentIds);
+    }
 
     log.info("메시지 업데이트 완료: messageId={}, attachmentCount={}",
         messageDto.id(),
@@ -170,11 +177,13 @@ public class BasicMessageService implements MessageService {
     Message message = messageRepository.findDetailById(messageId)
         .orElseThrow(() -> MessageNotFoundException.withMessageId(messageId));
 
-    List<BinaryContent> attachments = message.getAttachments();
-
-    attachments.forEach(oldAttachment -> binaryContentStorage.delete(oldAttachment.getId()));
+    List<UUID> attachmentIds = message.getAttachments().stream()
+        .map(BinaryContent::getId)
+        .toList();
 
     messageRepository.delete(message);
+
+    deleteBinaryContentsAfterCommit(attachmentIds);
 
     log.info("메시지 삭제 완료: messageId={}", messageId);
   }
@@ -194,8 +203,11 @@ public class BasicMessageService implements MessageService {
 
       BinaryContent binaryContent = binaryContentRepository.save(
           binaryContentMapper.toEntity(attachmentRequest));
-      binaryContentStorage.put(binaryContent.getId(), attachmentRequest.bytes());
-
+      binaryContentStorage.put(
+          binaryContent.getId(),
+          attachmentRequest.bytes(),
+          binaryContent.getContentType()
+      );
       log.info(
           "메시지 첨부파일 업로드 완료: binaryContentId={}, contentType={}, size={}",
           binaryContent.getId(),
@@ -206,5 +218,21 @@ public class BasicMessageService implements MessageService {
     }
 
     return attachments;
+  }
+
+  private void deleteBinaryContentsAfterCommit(List<UUID> binaryContentIds) {
+    if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+      binaryContentIds.forEach(binaryContentStorage::delete);
+      return;
+    }
+
+    TransactionSynchronizationManager.registerSynchronization(
+        new TransactionSynchronization() {
+          @Override
+          public void afterCommit() {
+            binaryContentIds.forEach(binaryContentStorage::delete);
+          }
+        }
+    );
   }
 }

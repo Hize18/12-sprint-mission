@@ -196,3 +196,22 @@
     - CD를 통해 이미지를 빌드하고 해당 이미지로 서비스 업데이트
 
 </details>
+
+<details>
+<summary style="font-size: 20px; font-weight: bold;">Sprint 9</summary>
+
+### Sprint 9
+
+- 멘토님의 리뷰를 참고하여 수정
+    - S3.delete()에 try-catch를 추가하여 예외 처리 패턴 일관화
+    - 정합성 부분 해결 시도
+        - DB가 커밋 성공 후 s3 정리 하는 방식으로 진행
+            - 이벤트 기반으로 `AFTER_COMMIT`후 `REQUIRES_NEW`이 아닌 트랜잭션동기화 방식으로 시도.
+    - AWS 환경변수를 `env:` 블록에 넣는 방식으로 변경
+    - 메시지 엔티티의 `orphanRemoval`로 DB는 삭제 되지만 실제 파일은 다른 곳에 책임이 있음.
+        - `BinaryContent`는 메타데이터, `Storage`에서 실제 파일을 관리한다고 주석으로 처리.
+    - `.dockerignore`부분은 추후 추가하겠습니다.
+    - s3에서 `put()`동작시 contentType도 추가하여 저장하도록 변경
+    - postgreSQL 버전을 17로 변경
+
+</details>

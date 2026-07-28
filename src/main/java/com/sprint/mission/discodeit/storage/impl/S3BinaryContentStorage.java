@@ -37,13 +37,14 @@ public class S3BinaryContentStorage implements BinaryContentStorage {
   private static final String PREFIX = "attachments";
 
   @Override
-  public UUID put(UUID binaryContentId, byte[] bytes) {
+  public UUID put(UUID binaryContentId, byte[] bytes, String contentType) {
     String key = resolveKey(binaryContentId);
 
     try {
       PutObjectRequest putObjectRequest = PutObjectRequest.builder()
           .bucket(properties.bucket())
           .key(key)
+          .contentType(contentType)
           .build();
 
       s3Client.putObject(putObjectRequest, RequestBody.fromBytes(bytes));
@@ -92,12 +93,16 @@ public class S3BinaryContentStorage implements BinaryContentStorage {
   public void delete(UUID binaryContentId) {
     String key = resolveKey(binaryContentId);
 
-    DeleteObjectRequest deleteReq = DeleteObjectRequest.builder()
-        .bucket(properties.bucket())
-        .key(key)
-        .build();
+    try {
+      DeleteObjectRequest deleteReq = DeleteObjectRequest.builder()
+          .bucket(properties.bucket())
+          .key(key)
+          .build();
 
-    s3Client.deleteObject(deleteReq);
+      s3Client.deleteObject(deleteReq);
+    } catch (Exception e) {
+      throw new FileStorageException(e);
+    }
   }
 
   private String generatePresignedUrl(String key, String contentType) {

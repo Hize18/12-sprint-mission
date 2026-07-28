@@ -31,6 +31,8 @@ jobs:
         with:
           registry-type: public
 
+      #buildx에 provenance나 캐시옵션을 추가하면 cd 빌드 단축 가능
+      #--cache-from / --cache-to type=gha
       - name: Build and push Docker image
         run: |
           ECR_URI="${{ vars.ECR_REPOSITORY_URI }}"

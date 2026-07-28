@@ -23,6 +23,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
 
 @SpringBootTest(properties = "discodeit.storage.type=s3")
 @ActiveProfiles("test")
@@ -39,30 +40,37 @@ public class S3BinaryContentStorageTest {
 
   private UUID id;
   private byte[] bytes;
+  private String contentType;
 
   @BeforeEach
   public void setup() {
     id = UUID.randomUUID();
     bytes = "test".getBytes(StandardCharsets.UTF_8);
+    contentType = "text/plain";
   }
 
   @Test
   @DisplayName("save_and_get_success")
   void save_success() throws IOException {
-    UUID binaryContentId = binaryContentStorage.put(id, bytes);
+    UUID binaryContentId = binaryContentStorage.put(id, bytes, contentType);
 
     assertThat(binaryContentId).isNotNull();
     assertThat(binaryContentId).isEqualTo(id);
 
     byte[] savedBytes = binaryContentStorage.get(id).readAllBytes();
+    String savedContentType = s3Client.headObject(HeadObjectRequest.builder()
+        .bucket(properties.bucket())
+        .key("attachments/" + id)
+        .build()).contentType();
 
     assertThat(savedBytes).isEqualTo(bytes);
+    assertThat(savedContentType).isEqualTo(contentType);
   }
 
   @Test
   @DisplayName("save_failed")
   void save_failed() {
-    assertThatThrownBy(() -> binaryContentStorage.put(id, null))
+    assertThatThrownBy(() -> binaryContentStorage.put(id, null, contentType))
         .isInstanceOf(FileStorageException.class);
   }
 
@@ -76,7 +84,7 @@ public class S3BinaryContentStorageTest {
   @Test
   @DisplayName("save_and_download_success")
   void download() {
-    UUID binaryContentId = binaryContentStorage.put(id, bytes);
+    UUID binaryContentId = binaryContentStorage.put(id, bytes, contentType);
 
     assertThat(binaryContentId).isNotNull();
 
