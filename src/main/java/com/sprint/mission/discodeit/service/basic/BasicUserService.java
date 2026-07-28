@@ -3,6 +3,7 @@ package com.sprint.mission.discodeit.service.basic;
 import com.sprint.mission.discodeit.dto.binaryContent.BinaryContentCreateRequest;
 import com.sprint.mission.discodeit.dto.user.UserCreateRequest;
 import com.sprint.mission.discodeit.dto.user.UserDto;
+import com.sprint.mission.discodeit.dto.user.UserRoleUpdateRequest;
 import com.sprint.mission.discodeit.dto.user.UserUpdateRequest;
 import com.sprint.mission.discodeit.entity.BinaryContent;
 import com.sprint.mission.discodeit.entity.User;
@@ -23,6 +24,8 @@ import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -38,6 +41,7 @@ public class BasicUserService implements UserService {
   private final BinaryContentStorage binaryContentStorage;
   private final UserMapper userMapper;
   private final BinaryContentMapper binaryContentMapper;
+  private final PasswordEncoder passwordEncoder;
 
   @Override
   @Transactional
@@ -57,7 +61,14 @@ public class BasicUserService implements UserService {
 
     BinaryContent binaryContent = createProfile(profileCreateRequest);
 
-    User user = userMapper.toEntity(userCreateRequest, binaryContent);
+//    매퍼 변경을 하지 않고 dto 추가 생성 및 인코딩
+    UserCreateRequest passwordEncodedRequest = new UserCreateRequest(
+        userCreateRequest.username(),
+        userCreateRequest.email(),
+        passwordEncoder.encode(userCreateRequest.password())
+    );
+
+    User user = userMapper.toEntity(passwordEncodedRequest, binaryContent);
     UserStatus userStatus = UserStatus.builder()
         .user(user)
         .lastActiveAt(Instant.now())
@@ -130,7 +141,7 @@ public class BasicUserService implements UserService {
     }
 
     if (userUpdateRequest.newPassword() != null) {
-      user.setPassword(userUpdateRequest.newPassword());
+      user.setPassword(passwordEncoder.encode(userUpdateRequest.newPassword()));
     }
 
     BinaryContent oldProfileImage = null;
@@ -160,6 +171,22 @@ public class BasicUserService implements UserService {
     );
 
     return userDto;
+  }
+
+  //  role 변경은 도메인 메서드로 진행
+  @Override
+  @Transactional
+  @PreAuthorize("hasRole('ADMIN')")
+  public UserDto updateRole(UserRoleUpdateRequest userRoleUpdateRequest) {
+    if (userRoleUpdateRequest == null) {
+      throw new IllegalArgumentException("userRoleUpdateRequest is null.");
+    }
+    User user = userRepository.findDetailById(userRoleUpdateRequest.userId())
+        .orElseThrow(() -> UserNotFoundException.withUserId(userRoleUpdateRequest.userId()));
+
+    user.updateRole(userRoleUpdateRequest.newRole());
+
+    return userMapper.toDto(userRepository.save(user));
   }
 
   @Override
