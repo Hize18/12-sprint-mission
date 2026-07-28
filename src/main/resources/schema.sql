@@ -34,6 +34,7 @@ CREATE TABLE users
 	email      varchar(100)             NOT NULL,
 	password   varchar(60)              NOT NULL,
 	profile_id uuid                     NULL,
+    role       varchar(20)              NOT NULL,
 	CONSTRAINT fk_users_profile_id FOREIGN KEY (profile_id) REFERENCES binary_contents (id) ON DELETE SET NULL,
 	CONSTRAINT uk_users_username UNIQUE (username),
 	CONSTRAINT uk_users_email UNIQUE (email),
