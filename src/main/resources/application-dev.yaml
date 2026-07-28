@@ -30,3 +30,5 @@ logging:
 
     org.springframework.web: debug
     org.springframework.web.filter.CommonsRequestLoggingFilter: DEBUG
+
+    org.springframework.security: trace
