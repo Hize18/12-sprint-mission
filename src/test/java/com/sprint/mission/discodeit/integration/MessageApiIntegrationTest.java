@@ -14,11 +14,14 @@ import com.sprint.mission.discodeit.dto.message.MessageDto;
 import com.sprint.mission.discodeit.dto.message.MessageUpdateRequest;
 import com.sprint.mission.discodeit.dto.user.UserCreateRequest;
 import com.sprint.mission.discodeit.dto.user.UserDto;
+import com.sprint.mission.discodeit.entity.Role;
+import com.sprint.mission.discodeit.security.TestSecuritySupport;
 import com.sprint.mission.discodeit.service.ChannelService;
 import com.sprint.mission.discodeit.service.MessageService;
 import com.sprint.mission.discodeit.service.UserService;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -33,7 +36,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
-@AutoConfigureMockMvc
+@AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
 @Transactional
 public class MessageApiIntegrationTest {
@@ -63,6 +66,7 @@ public class MessageApiIntegrationTest {
         new UserCreateRequest("test_user", "test@test.com", "password1!"),
         Optional.empty()
     );
+    TestSecuritySupport.authenticate(userDto.id(), Role.CHANNEL_MANAGER);
 
     channelDto = channelService.create(
         new PublicChannelCreateRequest("test_channel", "description")
@@ -72,6 +76,11 @@ public class MessageApiIntegrationTest {
         new MessageCreateRequest(channelDto.id(), userDto.id(), "content")
         , List.of()
     );
+  }
+
+  @AfterEach
+  void tearDown() {
+    TestSecuritySupport.clear();
   }
 
   @Test

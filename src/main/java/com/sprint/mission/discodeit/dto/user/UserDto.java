@@ -13,4 +13,13 @@ public record UserDto(
     Role role
 ) {
 
+  public UserDto(
+      UUID id,
+      String username,
+      String email,
+      BinaryContentDto profile,
+      Boolean online
+  ) {
+    this(id, username, email, profile, online, Role.USER);
+  }
 }

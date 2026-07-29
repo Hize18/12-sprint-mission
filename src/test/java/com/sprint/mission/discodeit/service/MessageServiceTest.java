@@ -10,6 +10,8 @@ import com.sprint.mission.discodeit.dto.message.MessageDto;
 import com.sprint.mission.discodeit.dto.message.MessageUpdateRequest;
 import com.sprint.mission.discodeit.dto.user.UserCreateRequest;
 import com.sprint.mission.discodeit.dto.user.UserDto;
+import com.sprint.mission.discodeit.entity.Role;
+import com.sprint.mission.discodeit.security.TestSecuritySupport;
 import com.sprint.mission.discodeit.entity.BinaryContent;
 import com.sprint.mission.discodeit.repository.BinaryContentRepository;
 import com.sprint.mission.discodeit.storage.BinaryContentStorage;
@@ -57,6 +59,7 @@ public class MessageServiceTest {
         new UserCreateRequest("test_user", "test@test.com", "password1!"),
         Optional.empty()
     );
+    TestSecuritySupport.authenticate(userDto.id(), Role.CHANNEL_MANAGER);
 
     channelDto = channelService.create(
         new PublicChannelCreateRequest("test_channel", "description")
@@ -109,6 +112,7 @@ public class MessageServiceTest {
 
   @AfterEach
   void cleanup() {
+    TestSecuritySupport.clear();
     storageIds.forEach(binaryContentStorage::delete);
   }
 }
