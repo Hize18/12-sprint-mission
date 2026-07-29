@@ -213,5 +213,24 @@
     - `.dockerignore`부분은 추후 추가하겠습니다.
     - s3에서 `put()`동작시 contentType도 추가하여 저장하도록 변경
     - postgreSQL 버전을 17로 변경
+- 스프링 시큐리티 적용
+    - csrf 보호
+    - 로그인, 로그아웃
+    - 권한에 따른 접근 제어
+- 사용자에 대해 Role을 추가
+    - `ADMIN`, `CHANNEL_MANAGER`, `USER`
+    - 스키마에 role 추가
+    - 디폴트 값으로 USER 적용
+    - 실행시 `ADMIN`이 없으면 어드민 계정을 초기화
+    - 채널 생성, 수정, 삭제를 `CHANNEL_MANAGER`에 부여
+    - 사용자 권한 설정은 `ADMIN`에 부여
+    - `RoleHierarchy`를 활용해 권한의 계층 부여
+
+- 심화
+    - 세션 설정으로 동일한 계정으로 로그인 제어
+    - 권한이 변경된 사용자의 세션 무효화
+    - `UserStatus`제거 및 로그인 여부를 세션으로 관리
+    - `Remember-me`를 이용하여 인증 유지
+    - `SpEL`을 활용하여 사용자 수정, 삭제와 메시지 수정, 삭제는 본인만 가능
 
 </details>
