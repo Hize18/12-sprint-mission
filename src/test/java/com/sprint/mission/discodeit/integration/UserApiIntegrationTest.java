@@ -147,6 +147,37 @@ public class UserApiIntegrationTest {
   }
 
   @Test
+  @DisplayName("update_user_forbidden_when_not_self")
+  public void updateUser_forbidden_when_not_self() throws Exception {
+    UserDto otherUserDto = userService.create(
+        new UserCreateRequest("test2", "test2@test.com", "password2!"),
+        Optional.empty()
+    );
+    TestSecuritySupport.authenticate(otherUserDto.id(), Role.USER);
+
+    UserUpdateRequest userUpdateRequest = new UserUpdateRequest(
+        "updated_name",
+        "updated_email@update.com",
+        "updated_password1!"
+    );
+
+    MockMultipartFile userUpdateRequestPart = new MockMultipartFile(
+        "userUpdateRequest",
+        "",
+        "application/json",
+        objectMapper.writeValueAsBytes(userUpdateRequest)
+    );
+
+    mockMvc.perform(multipart("/api/users/{userId}", userDto.id())
+            .file(userUpdateRequestPart)
+            .with(request -> {
+              request.setMethod("PATCH");
+              return request;
+            }))
+        .andExpect(status().isForbidden());
+  }
+
+  @Test
   @DisplayName("delete_user")
   public void deleteUser() throws Exception {
     mockMvc.perform(get("/api/users"))
@@ -159,6 +190,19 @@ public class UserApiIntegrationTest {
     mockMvc.perform(get("/api/users"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.size()").value(1));
+  }
+
+  @Test
+  @DisplayName("delete_user_forbidden_when_not_self")
+  public void deleteUser_forbidden_when_not_self() throws Exception {
+    UserDto otherUserDto = userService.create(
+        new UserCreateRequest("test2", "test2@test.com", "password2!"),
+        Optional.empty()
+    );
+    TestSecuritySupport.authenticate(otherUserDto.id(), Role.USER);
+
+    mockMvc.perform(delete("/api/users/{userId}", userDto.id()))
+        .andExpect(status().isForbidden());
   }
 
 }

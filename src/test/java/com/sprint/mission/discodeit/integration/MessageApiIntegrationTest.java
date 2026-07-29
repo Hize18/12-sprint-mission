@@ -179,6 +179,35 @@ public class MessageApiIntegrationTest {
   }
 
   @Test
+  @DisplayName("update_message_forbidden_when_not_author")
+  void updateMessage_forbidden_when_not_author() throws Exception {
+    UserDto otherUserDto = userService.create(
+        new UserCreateRequest("other_user", "other@test.com", "password2!"),
+        Optional.empty()
+    );
+    TestSecuritySupport.authenticate(otherUserDto.id(), Role.USER);
+
+    MessageUpdateRequest messageUpdateRequest = new MessageUpdateRequest(
+        "newContent"
+    );
+
+    MockMultipartFile messageUpdateRequestPart = new MockMultipartFile(
+        "messageUpdateRequest",
+        "",
+        "application/json",
+        objectMapper.writeValueAsBytes(messageUpdateRequest)
+    );
+
+    mockMvc.perform(multipart("/api/messages/{messageId}", messageDto.id())
+            .file(messageUpdateRequestPart)
+            .with(request -> {
+              request.setMethod("PATCH");
+              return request;
+            }))
+        .andExpect(status().isForbidden());
+  }
+
+  @Test
   @DisplayName("update_message_with_attachments")
   void updateMessage_with_attachments() throws Exception {
     MessageCreateRequest beforeMessageCreateRequest = new MessageCreateRequest(
@@ -266,5 +295,18 @@ public class MessageApiIntegrationTest {
             .param("channelId", channelDto.id().toString()))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content.size()").value(0));
+  }
+
+  @Test
+  @DisplayName("delete_message_forbidden_when_not_author")
+  void deleteMessage_forbidden_when_not_author() throws Exception {
+    UserDto otherUserDto = userService.create(
+        new UserCreateRequest("other_user", "other@test.com", "password2!"),
+        Optional.empty()
+    );
+    TestSecuritySupport.authenticate(otherUserDto.id(), Role.USER);
+
+    mockMvc.perform(delete("/api/messages/{messageId}", messageDto.id()))
+        .andExpect(status().isForbidden());
   }
 }
