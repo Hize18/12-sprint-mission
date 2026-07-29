@@ -31,6 +31,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -126,6 +127,7 @@ public class BasicMessageService implements MessageService {
 
   @Override
   @Transactional
+  @PreAuthorize("@basicMessageService.isAuthor(#messageId, principal.userDto.id)")
   public MessageDto update(UUID messageId, MessageUpdateRequest messageUpdateRequest,
       List<BinaryContentCreateRequest> attachmentRequests) {
     if (messageId == null) {
@@ -169,6 +171,7 @@ public class BasicMessageService implements MessageService {
 
   @Override
   @Transactional
+  @PreAuthorize("@basicMessageService.isAuthor(#messageId, principal.userDto.id)")
   public void delete(UUID messageId) {
     if (messageId == null) {
       throw new IllegalArgumentException("messageId is null.");
@@ -234,5 +237,16 @@ public class BasicMessageService implements MessageService {
           }
         }
     );
+  }
+
+  public boolean isAuthor(UUID messageId, UUID userId) {
+    if (messageId == null || userId == null) {
+      return false;
+    }
+
+    return messageRepository.findById(messageId)
+        .map(message -> message.getAuthor() != null
+            && message.getAuthor().getId().equals(userId))
+        .orElse(false);
   }
 }

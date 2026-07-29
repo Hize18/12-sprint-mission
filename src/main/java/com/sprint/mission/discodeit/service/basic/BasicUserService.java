@@ -7,7 +7,6 @@ import com.sprint.mission.discodeit.dto.user.UserRoleUpdateRequest;
 import com.sprint.mission.discodeit.dto.user.UserUpdateRequest;
 import com.sprint.mission.discodeit.entity.BinaryContent;
 import com.sprint.mission.discodeit.entity.User;
-import com.sprint.mission.discodeit.entity.UserStatus;
 import com.sprint.mission.discodeit.exception.user.EmailAlreadyExistsException;
 import com.sprint.mission.discodeit.exception.user.UserNotFoundException;
 import com.sprint.mission.discodeit.exception.user.UsernameAlreadyExistsException;
@@ -15,9 +14,9 @@ import com.sprint.mission.discodeit.mapper.BinaryContentMapper;
 import com.sprint.mission.discodeit.mapper.UserMapper;
 import com.sprint.mission.discodeit.repository.BinaryContentRepository;
 import com.sprint.mission.discodeit.repository.UserRepository;
+import com.sprint.mission.discodeit.security.SessionManager;
 import com.sprint.mission.discodeit.service.UserService;
 import com.sprint.mission.discodeit.storage.BinaryContentStorage;
-import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -42,6 +41,7 @@ public class BasicUserService implements UserService {
   private final UserMapper userMapper;
   private final BinaryContentMapper binaryContentMapper;
   private final PasswordEncoder passwordEncoder;
+  private final SessionManager sessionManager;
 
   @Override
   @Transactional
@@ -104,6 +104,7 @@ public class BasicUserService implements UserService {
 
   @Override
   @Transactional
+  @PreAuthorize("#userId.equals(principal.userDto.id)")
   public UserDto update(UUID userId, UserUpdateRequest userUpdateRequest,
       Optional<BinaryContentCreateRequest> profileCreateRequest) {
     if (userId == null) {
@@ -180,12 +181,14 @@ public class BasicUserService implements UserService {
         .orElseThrow(() -> UserNotFoundException.withUserId(userRoleUpdateRequest.userId()));
 
     user.updateRole(userRoleUpdateRequest.newRole());
+    sessionManager.invalidateSessionsByUserId(user.getId());
 
     return userMapper.toDto(userRepository.save(user));
   }
 
   @Override
   @Transactional
+  @PreAuthorize("#userId.equals(principal.userDto.id)")
   public void delete(UUID userId) {
     if (userId == null) {
       throw new IllegalArgumentException("userId is null.");
@@ -197,6 +200,8 @@ public class BasicUserService implements UserService {
     BinaryContent profile = user.getProfile();
 
     userRepository.delete(user);
+
+    sessionManager.invalidateSessionsByUserId(user.getId());
 
     if (profile != null) {
       UUID profileId = profile.getId();
