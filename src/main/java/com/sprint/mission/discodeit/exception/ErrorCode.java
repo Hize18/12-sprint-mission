@@ -16,10 +16,6 @@ public enum ErrorCode {
   USERNAME_DUPLICATED(409, "이미 사용 중인 사용자 이름입니다."),
   EMAIL_DUPLICATED(409, "이미 사용 중인 이메일입니다."),
 
-  // UserStatus
-  USER_STATUS_NOT_FOUND(404, "사용자 상태를 찾을 수 없습니다."),
-  USER_STATUS_DUPLICATED(409, "사용자 상태가 이미 존재합니다."),
-
   // Channel
   CHANNEL_NOT_FOUND(404, "채널을 찾을 수 없습니다."),
   CHANNEL_NAME_DUPLICATED(409, "이미 사용 중인 채널 이름입니다."),

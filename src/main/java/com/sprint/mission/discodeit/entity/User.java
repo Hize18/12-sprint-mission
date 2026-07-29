@@ -25,7 +25,7 @@ import lombok.experimental.SuperBuilder;
 @Table(name = "users")
 @Getter
 @Setter
-@ToString(callSuper = true, exclude = {"profile", "readStatuses", "status"})
+@ToString(callSuper = true, exclude = {"profile", "readStatuses",})
 @SuperBuilder
 //@AllArgsConstructor(access = AccessLevel.PROTECTED)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -52,13 +52,6 @@ public class User extends BaseUpdatableEntity {
 
   @OneToMany(mappedBy = "user")
   private List<ReadStatus> readStatuses = new ArrayList<>();
-
-  @OneToOne(
-      mappedBy = "user",
-      cascade = CascadeType.ALL,
-      orphanRemoval = true
-  )
-  private UserStatus status;
 
   public User(String username, String email, String password, BinaryContent profile) {
     if (username == null || username.isBlank()) {

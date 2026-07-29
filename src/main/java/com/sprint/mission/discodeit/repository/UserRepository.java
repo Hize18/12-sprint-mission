@@ -11,14 +11,14 @@ import org.springframework.data.jpa.repository.Query;
 
 public interface UserRepository extends JpaRepository<User, UUID> {
 
-  @EntityGraph(attributePaths = {"profile", "status"})
+  @EntityGraph(attributePaths = {"profile"})
   Optional<User> findByUsername(String username);
 
   @Query("""
       select u
       from User u
       """)
-  @EntityGraph(attributePaths = {"profile", "status"})
+  @EntityGraph(attributePaths = {"profile"})
   List<User> findAllWithFetch();
 
   @Query("""
@@ -26,7 +26,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
       from User u
       where u.id = :userId
       """)
-  @EntityGraph(attributePaths = {"profile", "status"})
+  @EntityGraph(attributePaths = {"profile"})
   Optional<User> findDetailById(UUID userId);
 
   boolean existsByUsername(String username);

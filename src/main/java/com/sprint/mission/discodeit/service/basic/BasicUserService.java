@@ -69,11 +69,6 @@ public class BasicUserService implements UserService {
     );
 
     User user = userMapper.toEntity(passwordEncodedRequest, binaryContent);
-    UserStatus userStatus = UserStatus.builder()
-        .user(user)
-        .lastActiveAt(Instant.now())
-        .build();
-    user.setStatus(userStatus);
 
     User savedUser = userRepository.save(user);
     UserDto userDto = userMapper.toDto(savedUser);
